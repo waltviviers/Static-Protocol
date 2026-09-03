@@ -45,12 +45,19 @@
   /* ── The device: everything lives inside this phone, on purpose ── */
   .device-wrap {
     position: fixed; inset: 0;
-    background: radial-gradient(ellipse at 50% 15%, #0d0e1a 0%, #030304 72%);
+    background: #030304;
     display: flex; align-items: center; justify-content: center;
     padding: max(20px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-right)) max(20px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left));
   }
+  .bg-video {
+    position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 0;
+  }
+  .device-wrap::before {
+    content: ''; position: absolute; inset: 0; z-index: 1; pointer-events: none;
+    background: radial-gradient(ellipse at 50% 15%, rgba(13,14,26,0.35) 0%, rgba(3,3,4,0.88) 72%);
+  }
   .phone {
-    position: relative;
+    position: relative; z-index: 2;
     width: min(94vw, 400px, calc((100vh - 60px) * 0.4615));
     aspect-ratio: 9 / 19.5;
     background: #05050a;
@@ -67,6 +74,7 @@
   /* On an actual phone, a drawn bezel is a phone showing a picture of a phone — pointless. Go edge-to-edge and let the real device be the device. */
   @media (max-width: 480px) {
     .device-wrap { padding: 0; background: var(--bg); }
+    .bg-video { display: none; }
     .phone {
       width: 100vw; height: 100vh; height: 100dvh;
       max-width: none; aspect-ratio: unset;
@@ -274,6 +282,15 @@
 </head>
 <body>
 <div class="device-wrap">
+  <video class="bg-video" id="bg-video" loop muted playsinline preload="none" aria-hidden="true"></video>
+  <script>
+    // Desktop only — on the mobile breakpoint the phone fills the screen and the video is never seen.
+    if (window.matchMedia('(min-width: 481px)').matches) {
+      var bgVideo = document.getElementById('bg-video');
+      bgVideo.src = 'magnific_just-a-subtle-loop_s7NG0CJl8e.mp4';
+      bgVideo.play().catch(function () {});
+    }
+  </script>
   <div class="phone">
     <div class="notch" aria-hidden="true"></div>
     <div class="status-bar">
