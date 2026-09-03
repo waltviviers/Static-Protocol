@@ -237,14 +237,16 @@
   .sync-sub { font-size: 10.5px; color: rgba(217,247,242,0.45); text-align: center; margin-bottom: 22px; letter-spacing: 0.05em; }
   .sync-arena { display: flex; flex-direction: column; align-items: center; gap: 22px; }
   .ring-wrap { position: relative; width: 116px; height: 116px; display: flex; align-items: center; justify-content: center; }
-  .ring-track, .ring-fill { position: absolute; inset: 0; border-radius: 50%; }
-  .ring-track { border: 2px solid rgba(217,247,242,0.12); }
-  .ring-fill { border: 2px solid var(--cyan); box-shadow: 0 0 16px rgba(34,230,212,0.5); transform: scale(1); transition: transform linear, border-color linear; }
-  .ring-fill.late { border-color: var(--amber); box-shadow: 0 0 16px rgba(255,207,61,0.5); }
+  .ring-track { position: absolute; inset: 0; border-radius: 50%; border: 2px solid rgba(217,247,242,0.12); }
   .ring-glyph { position: relative; z-index: 2; font-size: 30px; font-weight: 800; color: #eafffb; }
-  .ring-glyph.flash-hit { color: var(--cyan); }
-  .ring-glyph.flash-miss { color: var(--danger); }
-  .ring-glyph.flash-late { color: var(--amber); }
+
+  /* ── Dodge (rooftop: evade the scan pulse) ── */
+  .dodge-field { position: relative; width: 230px; height: 230px; border-radius: 20px; border: 1px solid rgba(217,247,242,0.15); background: radial-gradient(circle at 50% 50%, rgba(34,230,212,0.05), transparent 70%); overflow: hidden; }
+  .dodge-target { position: absolute; width: 14px; height: 14px; border-radius: 50%; background: var(--danger); box-shadow: 0 0 12px rgba(255,77,77,0.8); transform: translate(-50%,-50%); }
+  .dodge-target.hit { background: var(--cyan); box-shadow: 0 0 14px var(--cyan); }
+  .dodge-target.late { background: var(--amber); box-shadow: 0 0 14px var(--amber); }
+  .dodge-ring { position: absolute; width: 60px; height: 60px; border-radius: 50%; border: 2px solid rgba(255,77,77,0.55); transform: translate(-50%,-50%) scale(1); transition: transform linear, border-color linear; }
+  .dodge-ring.late { border-color: var(--amber); }
 
   .memory-row { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; max-width: 300px; }
   .memory-slot {
@@ -405,7 +407,7 @@ var NODES = [
       { id: 'slip',   icon: 'shadow', label: 'Slip past it',                 method: { stealth: 2 },  trust: {} },
       { id: 'favour', icon: 'signal', label: 'Call in a Street favour',      method: { stealth: 1 },  trust: { street: 2 } }
     ],
-    sync: { mode: 'react', length: 5, duration: 950, label: 'EVADE THE SCAN PULSE', sub: 'Match the glyph before the ring closes' },
+    sync: { mode: 'dodge', rounds: 5, duration: 1300, label: 'EVADE THE SCAN PULSE', sub: 'Tap the gap before the ring closes' },
     outcomes: {
       clean: function (c) {
         return c.id === 'fight'  ? "The drone never gets a shot off. Its optics spark and die under your fists before it finishes turning."
@@ -512,8 +514,8 @@ var NODES = [
              : c.id === 'fight'     ? "It's over before it starts. You're already past them, and they're still reaching."
              :                        "The crowd swallows you whole. By the time they push through it, there's nothing left to find.";
       },
-      partial: function (state) { state.flags.hurt = true; return "It goes mostly your way, but not for free — you're carrying a graze you'll feel tomorrow, if there is one."; },
-      fail: function (state) { state.flags.hurt = true; return "It goes loud and it goes wrong. You get clear, but not clean — and not without a mark to show for it."; }
+      partial: function () { state.flags.hurt = true; return "It goes mostly your way, but not for free — you're carrying a graze you'll feel tomorrow, if there is one."; },
+      fail: function () { state.flags.hurt = true; return "It goes loud and it goes wrong. You get clear, but not clean — and not without a mark to show for it."; }
     },
     onFail: function (state) { state.flags.hunted++; },
     onPartial: function () {}
@@ -829,77 +831,75 @@ function renderSyncIntro(node, choice) {
     else if (mode === 'timing') runTimingSync(node, choice);
     else if (mode === 'quickdraw') runQuickdrawSync(node, choice);
     else if (mode === 'overload') runOverloadSync(node, choice);
-    else runReactSync(node, choice);
+    else runDodgeSync(node, choice);
   });
 }
 
-/* ── React-mode SYNC: shrinking ring, one glyph at a time ── */
-function runReactSync(node, choice) {
-  var N = node.sync.length, D = node.sync.duration;
-  var hits = 0, lates = 0, misses = 0, i = 0, prevGlyph = null, active = true, startTime = 0, currentGlyph = null;
+/* ── Dodge-mode SYNC: tap the gap before a closing ring catches it ── */
+function runDodgeSync(node, choice) {
+  var N = node.sync.rounds, D = node.sync.duration;
+  var hits = 0, lates = 0, misses = 0, round = 0;
 
-  function frameHtml() {
-    return (
+  nextRound();
+
+  function nextRound() {
+    if (round >= N) return finish();
+    var tx = 15 + Math.random() * 70, ty = 15 + Math.random() * 70;
+    setPhoneScreen(
       '<div class="app-screen">' + screenHeaderHtml(node) +
         '<div class="app-body" style="text-align:center;">' +
           '<p class="eyebrow magenta">' + node.sync.label + '</p>' +
-          '<p class="sync-sub">' + (i + 1) + ' / ' + N + '</p>' +
+          '<p class="sync-sub">' + (round + 1) + ' / ' + N + '</p>' +
           '<div class="sync-arena">' +
-            '<div class="ring-wrap"><div class="ring-track"></div><div class="ring-fill" id="ring-fill"></div><div class="ring-glyph" id="ring-glyph"></div></div>' +
-            dpadHtml() +
-            '<div class="key-hint">Arrow keys / WASD, or tap</div>' +
+            '<div class="dodge-field" id="dodge-field">' +
+              '<div class="dodge-ring" id="dodge-ring" style="left:' + tx + '%;top:' + ty + '%;"></div>' +
+              '<div class="dodge-target" id="dodge-target" style="left:' + tx + '%;top:' + ty + '%;"></div>' +
+            '</div>' +
+            '<div class="key-hint">Tap the gap, or press Space / Enter</div>' +
           '</div>' +
         '</div>' +
       '</div>'
     );
-  }
-  setPhoneScreen(frameHtml());
-  bindDpad(handleInput);
-  document.addEventListener('keydown', keyHandler);
+    var field = document.getElementById('dodge-field');
+    var target = document.getElementById('dodge-target');
+    var ring = document.getElementById('dodge-ring');
+    ring.style.transition = 'none'; ring.style.transform = 'translate(-50%,-50%) scale(2.4)';
+    void ring.offsetWidth;
+    ring.style.transition = 'transform ' + D + 'ms linear';
+    ring.style.transform = 'translate(-50%,-50%) scale(0.35)';
+    var startTime = performance.now(), active = true;
+    var missTimer = setTimeout(function () { if (active) resolve('miss'); }, D + 30);
+    timers.push(missTimer);
 
-  function nextPrompt() {
-    if (i >= N) return finish();
-    currentGlyph = randomGlyph(prevGlyph); prevGlyph = currentGlyph;
-    var sub = phoneScreen.querySelector('.sync-sub'); if (sub) sub.textContent = (i + 1) + ' / ' + N;
-    var glyphEl = document.getElementById('ring-glyph'); var fillEl = document.getElementById('ring-fill');
-    glyphEl.textContent = currentGlyph.sym; glyphEl.className = 'ring-glyph';
-    fillEl.className = 'ring-fill';
-    fillEl.style.transition = 'none'; fillEl.style.transform = 'scale(1)';
-    void fillEl.offsetWidth;
-    fillEl.style.transition = 'transform ' + D + 'ms linear';
-    fillEl.style.transform = 'scale(0)';
-    startTime = performance.now();
-    active = true;
-    timers.push(setTimeout(function () { if (active) resolvePrompt('miss'); }, D));
-  }
+    field.addEventListener('click', onTap);
+    document.addEventListener('keydown', keyHandler);
 
-  function resolvePrompt(kind) {
-    active = false;
-    var glyphEl = document.getElementById('ring-glyph'); var fillEl = document.getElementById('ring-fill');
-    if (kind === 'hit') { hits++; glyphEl.classList.add('flash-hit'); }
-    else if (kind === 'late') { lates++; glyphEl.classList.add('flash-late'); fillEl.classList.add('late'); }
-    else { misses++; glyphEl.classList.add('flash-miss'); }
-    i++;
-    timers.push(setTimeout(nextPrompt, 180));
+    function onTap(e) {
+      if (!active) return;
+      var r = field.getBoundingClientRect();
+      var px = ((e.clientX - r.left) / r.width) * 100;
+      var py = ((e.clientY - r.top) / r.height) * 100;
+      var dx = (px - tx) / 100 * r.width, dy = (py - ty) / 100 * r.height;
+      var dist = Math.sqrt(dx * dx + dy * dy);
+      resolve(dist <= 16 ? 'hit' : dist <= 34 ? 'late' : 'miss');
+    }
+    function keyHandler(e) { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); resolve('late'); } }
+    function resolve(kind) {
+      active = false;
+      clearTimeout(missTimer);
+      field.removeEventListener('click', onTap);
+      document.removeEventListener('keydown', keyHandler);
+      if (kind === 'hit') { hits++; target.classList.add('hit'); }
+      else if (kind === 'late') { lates++; target.classList.add('late'); ring.classList.add('late'); }
+      else { misses++; }
+      round++;
+      timers.push(setTimeout(nextRound, 260));
+    }
   }
-
-  function handleInput(dirKey) {
-    if (!active || !currentGlyph) return;
-    if (dirKey !== currentGlyph.key) { resolvePrompt('miss'); return; }
-    var elapsed = performance.now() - startTime;
-    resolvePrompt(elapsed <= D * 0.9 ? 'hit' : 'late');
-  }
-  function keyHandler(e) {
-    var g = glyphByKey(e.key);
-    if (g) { e.preventDefault(); handleInput(g.key); }
-  }
-
   function finish() {
-    document.removeEventListener('keydown', keyHandler);
     var result = classify(hits, lates, misses, N);
     settleSync(node, choice, result);
   }
-  nextPrompt();
 }
 
 /* ── Timing-mode SYNC: stop a sweeping marker inside a moving target zone ── */
@@ -1109,57 +1109,63 @@ function runQuickdrawSync(node, choice) {
   }
 }
 
-/* ── Overload-mode SYNC: the climax mashup — alternates glyph and flash prompts ── */
+/* ── Overload-mode SYNC: the climax mashup — alternates dodge and flash prompts ── */
 function runOverloadSync(node, choice) {
   var N = node.sync.rounds;
-  var hits = 0, lates = 0, misses = 0, round = 0, prevGlyph = null;
+  var hits = 0, lates = 0, misses = 0, round = 0;
 
   nextRound();
 
   function nextRound() {
     if (round >= N) return finish();
-    if (Math.random() < 0.55) runGlyphRound(); else runFlashRound();
+    if (Math.random() < 0.55) runDodgeRound(); else runFlashRound();
   }
 
-  function runGlyphRound() {
-    var D = 620;
-    var currentGlyph = randomGlyph(prevGlyph); prevGlyph = currentGlyph;
+  function runDodgeRound() {
+    var D = 780;
+    var tx = 15 + Math.random() * 70, ty = 15 + Math.random() * 70;
     setPhoneScreen(
       '<div class="app-screen">' + screenHeaderHtml(node) +
         '<div class="app-body" style="text-align:center;">' +
           '<p class="eyebrow magenta">' + node.sync.label + '</p>' +
           '<p class="sync-sub">' + (round + 1) + ' / ' + N + '</p>' +
           '<div class="sync-arena">' +
-            '<div class="ring-wrap"><div class="ring-track"></div><div class="ring-fill" id="ring-fill"></div><div class="ring-glyph" id="ring-glyph">' + currentGlyph.sym + '</div></div>' +
-            dpadHtml() +
-            '<div class="key-hint">Arrow keys / WASD, or tap</div>' +
+            '<div class="dodge-field" id="dodge-field" style="width:190px;height:190px;">' +
+              '<div class="dodge-ring" id="dodge-ring" style="left:' + tx + '%;top:' + ty + '%;"></div>' +
+              '<div class="dodge-target" id="dodge-target" style="left:' + tx + '%;top:' + ty + '%;"></div>' +
+            '</div>' +
+            '<div class="key-hint">Tap the gap, or press Space / Enter</div>' +
           '</div>' +
         '</div>' +
       '</div>'
     );
-    var glyphEl = document.getElementById('ring-glyph'), fillEl = document.getElementById('ring-fill');
-    fillEl.style.transition = 'none'; fillEl.style.transform = 'scale(1)';
-    void fillEl.offsetWidth;
-    fillEl.style.transition = 'transform ' + D + 'ms linear';
-    fillEl.style.transform = 'scale(0)';
-    var startTime = performance.now(), active = true;
-    bindDpad(handleInput);
+    var field = document.getElementById('dodge-field'), target = document.getElementById('dodge-target'), ring = document.getElementById('dodge-ring');
+    ring.style.transition = 'none'; ring.style.transform = 'translate(-50%,-50%) scale(2.4)';
+    void ring.offsetWidth;
+    ring.style.transition = 'transform ' + D + 'ms linear';
+    ring.style.transform = 'translate(-50%,-50%) scale(0.35)';
+    var active = true;
+    timers.push(setTimeout(function () { if (active) resolve('miss'); }, D + 30));
+    field.addEventListener('click', onTap);
     document.addEventListener('keydown', keyHandler);
-    timers.push(setTimeout(function () { if (active) resolve('miss'); }, D));
 
-    function handleInput(dirKey) {
+    function onTap(e) {
       if (!active) return;
-      if (dirKey !== currentGlyph.key) { resolve('miss'); return; }
-      var elapsed = performance.now() - startTime;
-      resolve(elapsed <= D * 0.9 ? 'hit' : 'late');
+      var r = field.getBoundingClientRect();
+      var px = ((e.clientX - r.left) / r.width) * 100;
+      var py = ((e.clientY - r.top) / r.height) * 100;
+      var dx = (px - tx) / 100 * r.width, dy = (py - ty) / 100 * r.height;
+      var dist = Math.sqrt(dx * dx + dy * dy);
+      resolve(dist <= 18 ? 'hit' : dist <= 38 ? 'late' : 'miss');
     }
-    function keyHandler(e) { var g = glyphByKey(e.key); if (g) { e.preventDefault(); handleInput(g.key); } }
+    function keyHandler(e) { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); resolve('late'); } }
     function resolve(kind) {
       active = false;
+      field.removeEventListener('click', onTap);
       document.removeEventListener('keydown', keyHandler);
-      if (kind === 'hit') { hits++; glyphEl.classList.add('flash-hit'); }
-      else if (kind === 'late') { lates++; glyphEl.classList.add('flash-late'); fillEl.classList.add('late'); }
-      else { misses++; glyphEl.classList.add('flash-miss'); }
+      if (kind === 'hit') { hits++; target.classList.add('hit'); }
+      else if (kind === 'late') { lates++; target.classList.add('late'); ring.classList.add('late'); }
+      else { misses++; }
       round++;
       timers.push(setTimeout(nextRound, 150));
     }
