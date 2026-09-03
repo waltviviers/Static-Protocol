@@ -137,7 +137,7 @@
   .ghost-btn:active { transform: scale(0.98); background: rgba(255,255,255,0.1); }
 
   /* ── Home screen ── */
-  .home-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px 10px; padding: 30px 18px 10px; }
+  .home-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px 10px; padding: 96px 18px 10px; }
   .app-icon { display: flex; flex-direction: column; align-items: center; gap: 6px; background: none; border: none; color: inherit; position: relative; }
   .app-icon .tile {
     width: 52px; height: 52px; border-radius: 15px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
@@ -265,6 +265,10 @@
   .dodge-target.late { background: var(--amber); box-shadow: 0 0 14px var(--amber); }
   .dodge-ring { position: absolute; width: 60px; height: 60px; border-radius: 50%; border: 2px solid rgba(255,77,77,0.55); transform: translate(-50%,-50%) scale(1); transition: transform linear, border-color linear; }
   .dodge-ring.late { border-color: var(--amber); }
+
+  /* ── Hit feedback: a brief brightness pulse, safe to layer on any element regardless of its own transform ── */
+  @keyframes hitFlash { 0% { filter: brightness(1); } 25% { filter: brightness(2.4); } 100% { filter: brightness(1); } }
+  .hit-pulse { animation: hitFlash 0.3s ease-out; }
 
   .memory-row { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; max-width: 300px; }
   .memory-slot {
@@ -831,6 +835,15 @@ function classify(hits, lates, misses, N) {
   return 'partial';
 }
 
+/* ── Feedback: a crisp buzz + brightness pulse on a clean hit, a duller one on a miss ── */
+function haptic(pattern) {
+  if (navigator.vibrate) { try { navigator.vibrate(pattern); } catch (e) {} }
+}
+function feedbackFor(kind, el) {
+  if (kind === 'hit') { haptic(18); if (el) { el.classList.remove('hit-pulse'); void el.offsetWidth; el.classList.add('hit-pulse'); } }
+  else if (kind === 'miss') { haptic([40, 30, 40]); }
+}
+
 /* ── Status bar (persistent — signal bars double as the Hunted meter) ── */
 function updateStatusBar() {
   var hunted = state ? Math.min(state.flags.hunted, 3) : 0;
@@ -1145,6 +1158,7 @@ function runDodgeSync(node, choice) {
       clearTimeout(missTimer);
       field.removeEventListener('click', onTap);
       document.removeEventListener('keydown', keyHandler);
+      feedbackFor(kind, target);
       if (kind === 'hit') { hits++; target.classList.add('hit'); }
       else if (kind === 'late') { lates++; target.classList.add('late'); ring.classList.add('late'); }
       else { misses++; }
@@ -1212,6 +1226,7 @@ function runTimingSync(node, choice) {
       document.removeEventListener('keydown', keyHandler);
       marker.style.transition = 'none'; marker.style.left = pos + '%';
       marker.classList.add(kind);
+      feedbackFor(kind, marker);
       if (kind === 'hit') hits++; else if (kind === 'late') lates++; else misses++;
       round++;
       timers.push(setTimeout(nextRound, 260));
@@ -1287,8 +1302,8 @@ function runMemorySync(node, choice) {
     function handleInput(dirKey) {
       if (!active || pos >= pattern.length) return;
       var expected = pattern[pos];
-      if (dirKey === expected.key) slots[pos].classList.add('hit');
-      else { slots[pos].classList.add('miss'); misses++; }
+      if (dirKey === expected.key) { slots[pos].classList.add('hit'); feedbackFor('hit', slots[pos]); }
+      else { slots[pos].classList.add('miss'); misses++; feedbackFor('miss'); }
       pos++;
       if (pos >= pattern.length) finish();
     }
@@ -1354,6 +1369,9 @@ function runQuickdrawSync(node, choice) {
     function resolve(kind) {
       phase = 'done';
       document.removeEventListener('keydown', keyHandler);
+      stage.className = 'quickdraw-stage ' + (kind === 'miss' ? 'early' : 'go');
+      stage.textContent = kind === 'hit' ? 'HIT' : kind === 'late' ? 'LATE' : 'MISSED';
+      feedbackFor(kind, stage);
       if (kind === 'hit') hits++; else if (kind === 'late') lates++; else misses++;
       round++;
       timers.push(setTimeout(nextRound, 500));
@@ -1419,6 +1437,7 @@ function runOverloadSync(node, choice) {
       active = false;
       field.removeEventListener('click', onTap);
       document.removeEventListener('keydown', keyHandler);
+      feedbackFor(kind, target);
       if (kind === 'hit') { hits++; target.classList.add('hit'); }
       else if (kind === 'late') { lates++; target.classList.add('late'); ring.classList.add('late'); }
       else { misses++; }
@@ -1458,6 +1477,7 @@ function runOverloadSync(node, choice) {
       active = false;
       document.removeEventListener('keydown', keyHandler);
       el.removeEventListener('click', act);
+      feedbackFor(kind, el);
       if (kind === 'hit') hits++; else if (kind === 'late') lates++; else misses++;
       round++;
       timers.push(setTimeout(nextRound, 150));
