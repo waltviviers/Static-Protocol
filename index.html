@@ -110,13 +110,21 @@
   ::-webkit-scrollbar-thumb { background: rgba(34,230,212,0.25); }
 
   /* ── Lock screen ── */
-  .lock-screen { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 20px; }
+  .lock-screen { position: relative; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 20px; overflow: hidden; }
+  .lock-bg-video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 0; }
+  .lock-scrim { position: absolute; inset: 0; z-index: 1; background: linear-gradient(180deg, rgba(5,5,10,0.55) 0%, rgba(5,5,10,0.75) 55%, rgba(5,5,10,0.92) 100%); }
+  .lock-content { position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center; width: 100%; }
   .lock-time { font-size: 46px; font-weight: 300; margin-bottom: 4px; letter-spacing: -0.02em; }
   .lock-date { font-size: 11px; color: rgba(217,247,242,0.45); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 46px; }
   .lock-brand { font-size: 1.3rem; font-weight: 800; letter-spacing: 0.06em; margin-bottom: 10px; }
   .lock-copy { font-size: 11.5px; color: rgba(217,247,242,0.5); max-width: 240px; line-height: 1.7; }
-  .lock-hint { font-size: 10.5px; color: rgba(217,247,242,0.4); letter-spacing: 0.14em; text-transform: uppercase; margin-top: 56px; animation: hintPulse 2s ease-in-out infinite; }
-  @keyframes hintPulse { 0%, 100% { opacity: 0.35; } 50% { opacity: 0.9; } }
+  .menu-actions { display: flex; flex-direction: column; gap: 10px; width: 100%; max-width: 230px; margin-top: 50px; }
+  .ghost-btn {
+    display: flex; width: 100%; align-items: center; justify-content: center;
+    background: rgba(255,255,255,0.06); border: 1px solid rgba(217,247,242,0.25); color: #d9f7f2;
+    font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; font-size: 11px; padding: 13px;
+  }
+  .ghost-btn:active { transform: scale(0.98); background: rgba(255,255,255,0.1); }
 
   /* ── Home screen ── */
   .home-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px 10px; padding: 30px 18px 10px; }
@@ -666,24 +674,54 @@ function bindChoiceControls(node) {
   });
 }
 
+function startNewGame() {
+  state = freshState();
+  updateStatusBar();
+  renderHome();
+  queueNotification(state.nodeIndex);
+}
+
 function renderLock() {
   clearTimers();
   setPhoneScreen(
     '<div class="lock-screen">' +
-      '<div class="lock-time" id="lock-time-face">--:--</div>' +
-      '<div class="lock-date">' + formattedDate() + '</div>' +
-      '<div class="lock-brand glitch" data-text="STATIC PROTOCOL">STATIC PROTOCOL</div>' +
-      '<div class="lock-copy">This is the runner\'s phone. Five jobs come through tonight — however you handle them, on this screen, is however this goes.</div>' +
-      '<div class="lock-hint">Tap to unlock</div>' +
+      '<video class="lock-bg-video" autoplay loop muted playsinline aria-hidden="true" src="magnific_no-moths-way-more-flicker_3zVs6SqREY.mp4"></video>' +
+      '<div class="lock-scrim" aria-hidden="true"></div>' +
+      '<div class="lock-content">' +
+        '<div class="lock-time" id="lock-time-face">--:--</div>' +
+        '<div class="lock-date">' + formattedDate() + '</div>' +
+        '<div class="lock-brand glitch" data-text="STATIC PROTOCOL">STATIC PROTOCOL</div>' +
+        '<div class="lock-copy">This is the runner\'s phone. Five jobs come through tonight — however you handle them, on this screen, is however this goes.</div>' +
+        '<div class="menu-actions">' +
+          '<button class="primary-btn" id="new-game-btn">New Game</button>' +
+          '<button class="ghost-btn" id="how-to-play-btn">How To Play</button>' +
+        '</div>' +
+      '</div>' +
     '</div>'
   );
   var lf = document.getElementById('lock-time-face'); if (lf) lf.textContent = new Date().toTimeString().slice(0, 5);
-  phoneScreen.querySelector('.lock-screen').addEventListener('click', function () {
-    state = freshState();
-    updateStatusBar();
-    renderHome();
-    queueNotification(state.nodeIndex);
-  });
+  document.getElementById('new-game-btn').addEventListener('click', startNewGame);
+  document.getElementById('how-to-play-btn').addEventListener('click', renderHowToPlay);
+}
+
+function renderHowToPlay() {
+  clearTimers();
+  setPhoneScreen(
+    '<div class="app-screen">' +
+      '<div class="app-header"><button class="back-btn" id="back-start">←</button><span class="aname">How To Play</span></div>' +
+      '<div class="app-body">' +
+        '<div class="prose">' +
+          '<p>This is the runner\'s phone. Five jobs come through tonight. Tap a notification to open the app it lands in, then pick how you handle it.</p>' +
+          '<p>Every choice triggers a live <b>SYNC</b> — a short minigame, different for every job. Tap the prompts, or use arrow keys / WASD / Space on desktop. Clean it and your choice plays out exactly as intended; fumble it and the job gets forced sideways.</p>' +
+          '<p>Fumble too many and the heat — the signal bars, top right — climbs. Three strikes and the job ends for you, whatever you decide next.</p>' +
+          '<p>Ten different endings are waiting, built from who you trusted, how you got it done, and how steady your hands were.</p>' +
+        '</div>' +
+        '<button class="primary-btn" id="start-from-howto">New Game</button>' +
+      '</div>' +
+    '</div>'
+  );
+  document.getElementById('back-start').addEventListener('click', renderLock);
+  document.getElementById('start-from-howto').addEventListener('click', startNewGame);
 }
 
 function renderHome() {
