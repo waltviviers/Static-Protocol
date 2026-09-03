@@ -118,6 +118,7 @@
   .menu-panel { position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center; width: 100%; max-width: 340px; }
   .menu-panel[hidden] { display: none; }
   .menu-brand { font-size: 2.1rem; font-weight: 800; letter-spacing: 0.06em; margin-bottom: 16px; }
+  .menu-loop-tag { font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--magenta); margin-bottom: 14px; }
   .menu-copy { font-size: 13px; color: rgba(217,247,242,0.65); max-width: 300px; line-height: 1.7; }
   .menu-howto { max-width: 380px; }
   .menu-howto .prose { text-align: left; }
@@ -325,6 +326,7 @@
   <div class="menu-scrim" aria-hidden="true"></div>
   <div class="menu-panel" id="menu-main">
     <div class="menu-brand glitch" data-text="STATIC PROTOCOL">STATIC PROTOCOL</div>
+    <div class="menu-loop-tag" id="loop-tag" hidden></div>
     <div class="menu-copy">A cyberpunk data heist, played entirely on the runner's phone. Five jobs tonight — however you handle them is however this goes.</div>
     <div class="menu-actions">
       <button class="primary-btn" id="new-game-btn">New Game</button>
@@ -427,9 +429,11 @@ var APPS = [
 ];
 function appById(id) { for (var i = 0; i < APPS.length; i++) if (APPS[i].id === id) return APPS[i]; return null; }
 
-/* ── Narrative data (unchanged from earlier drafts — the engine is solid) ── */
-var NODES = [
-  {
+/* ── Narrative data ── */
+/* Nodes 0, 1, 3, 4 are fixed. Node 2 branches into one of three variants,
+   picked by whichever trust is dominant once node 1 resolves — a real fork
+   in scene, choices and SYNC mechanic, not just re-flavoured text. */
+var NODE_ROOFTOP = {
     id: 'rooftop',
     art: { accent: '#22e6d4' },
     app: 'tracker',
@@ -462,8 +466,9 @@ var NODES = [
     },
     onFail: function (state) { state.flags.hunted++; if (state.lastChoice.id !== 'fight') state.flags.method.violence++; },
     onPartial: function () {}
-  },
-  {
+};
+
+var NODE_FIXER = {
     id: 'fixer',
     art: { accent: '#ffcf3d' },
     app: 'messages',
@@ -495,9 +500,11 @@ var NODES = [
     },
     onFail: function (state) { state.flags.hunted++; state.flags.betrayed = true; },
     onPartial: function () {}
-  },
-  {
-    id: 'server',
+};
+
+/* Branch: dominant trust after the fixer decides which of these three plays out. */
+var NODE_SERVER_STREET = {
+    id: 'server-street',
     art: { accent: '#22e6d4' },
     app: 'breach',
     notif: { title: 'BREACH', body: 'Terminal in range — signal locked' },
@@ -528,8 +535,83 @@ var NODES = [
     onFail: function (state) { state.flags.hunted++; if (state.lastChoice.id !== 'brute') state.flags.method.violence++; },
     onPartial: function () {},
     onSelect: function (state, choice) { if (choice.id === 'ai') state.flags.aiAlly = true; }
-  },
-  {
+};
+
+var NODE_SERVER_CORP = {
+    id: 'server-corp',
+    art: { accent: '#ffcf3d' },
+    app: 'breach',
+    notif: { title: 'BREACH', body: 'Access granted — somebody\'s watching' },
+    label: 'NODE 03 — CORP CLEARANCE',
+    scene: [
+      "Corp Tower, sub-level six — except this time the elevator already knows your floor. The credentials your fixer traded away get you further than you expected: a terminal, live, unlocked, no alarm anywhere in earshot. That's the part that should worry you.",
+      "Every door that opens this easily is a door somebody upstairs is watching close on a screen you'll never see. You've got a badge that isn't really yours, and about as much time as it takes them to double-check the name on it."
+    ],
+    choices: [
+      { id: 'play-along', icon: 'seal',     label: 'Play the authorised visitor',   method: { words: 1 },   trust: { corp: 1 } },
+      { id: 'grab-fast',  icon: 'terminal', label: 'Grab the data and get out fast', method: { stealth: 1 }, trust: {} },
+      { id: 'go-dark',    icon: 'eye',      label: 'Cut the feed and improvise',     method: { violence: 1 }, trust: {} }
+    ],
+    sync: { mode: 'quickdraw', rounds: 4, minDelay: 700, maxDelay: 1800, hitMs: 240, lateMs: 500, label: 'HOLD THE COVER', sub: 'Every check-in is a chance they clock you' },
+    outcomes: {
+      clean: function (c) {
+        return c.id === 'play-along' ? "You badge through three separate checkpoints without a flicker of doubt from anyone watching. Whoever built this cover, they built it well."
+             : c.id === 'grab-fast'  ? "You're in, you're out, and the terminal never even finishes logging your session."
+             :                         "You kill the feed clean — thirty seconds of true blindness, and you use every one of them.";
+      },
+      partial: function () {
+        return "You get through, but a supervisor's badge pings twice on your way out. Filed away. Not urgent. Not forgotten, either.";
+      },
+      fail: function () {
+        return "The credentials hold for exactly as long as it takes someone to actually read your face against the file photo. Then they don't hold at all.";
+      }
+    },
+    onFail: function (state) { state.flags.hunted++; state.flags.trust.corp = Math.max(0, state.flags.trust.corp - 1); },
+    onPartial: function () {}
+};
+
+var NODE_SERVER_SELF = {
+    id: 'server-self',
+    art: { accent: '#ff3d94' },
+    app: 'breach',
+    notif: { title: 'BREACH', body: 'You\'re on your own for this one' },
+    label: 'NODE 03 — SOLO BREAK-IN',
+    scene: [
+      "No fixer intel, no street map of the guard rotation, no corp clearance riding shotgun for you tonight — just sub-level six, a terminal that doesn't care whose idea this was, and the sound of your own breathing.",
+      "Whatever happens in this room, there's nobody to call if it goes wrong. You've got maybe ninety seconds before the next patrol swings back through. Alone, ninety seconds is a very long time."
+    ],
+    choices: [
+      { id: 'quiet', icon: 'shadow',   label: 'Move quiet, trust nothing',      method: { stealth: 2 },  trust: { self: 1 } },
+      { id: 'force', icon: 'door',     label: 'Force the terminal open',        method: { violence: 2 }, trust: {} },
+      { id: 'gamble', icon: 'eye',     label: 'Gamble on the rogue AI again',   method: { words: 1 },    trust: { self: 1 } }
+    ],
+    sync: { mode: 'dodge', rounds: 6, duration: 1050, label: 'CLEAR EACH PATROL GAP', sub: 'Nobody\'s covering you if you miss one' },
+    outcomes: {
+      clean: function (c) {
+        return c.id === 'quiet'  ? "You thread every gap in the rotation like you've walked it a hundred times before. Nobody so much as glances your way."
+             : c.id === 'force'  ? "You're through before the terminal even finishes complaining about it. Brute, but nobody's around to hear it."
+             :                     "The AI answers again, quieter this time — like it already knew you'd come back alone.";
+      },
+      partial: function () {
+        return "You get through, but one patrol nearly doubles back on you. Too close, and you both know it.";
+      },
+      fail: function () {
+        return "The rotation catches you halfway across the floor, and there's no favour, no cover story, nobody at all to talk you out of this one.";
+      }
+    },
+    onFail: function (state) { state.flags.hunted++; },
+    onPartial: function () {},
+    onSelect: function (state, choice) { if (choice.id === 'gamble') state.flags.aiAlly = true; }
+};
+
+function pickServerVariant(state) {
+  var t = dominant(state.flags.trust, ['street', 'self', 'corp']);
+  if (t === 'corp') return NODE_SERVER_CORP;
+  if (t === 'self') return NODE_SERVER_SELF;
+  return NODE_SERVER_STREET;
+}
+
+var NODE_CONFRONTATION = {
     id: 'confrontation',
     art: { accent: '#ff4d4d' },
     app: 'call',
@@ -556,8 +638,9 @@ var NODES = [
     },
     onFail: function (state) { state.flags.hunted++; },
     onPartial: function () {}
-  },
-  {
+};
+
+var NODE_FINAL = {
     id: 'final',
     art: { accent: '#ff3d94' },
     app: 'transmit',
@@ -578,8 +661,11 @@ var NODES = [
     outcomes: { clean: function(){return '';}, partial: function(){return '';}, fail: function(){return '';} },
     onFail: function (state) { state.flags.hunted++; },
     onPartial: function () {}
-  }
-];
+};
+
+function buildNodeSequence() {
+  return [NODE_ROOFTOP, NODE_FIXER, null, NODE_CONFRONTATION, NODE_FINAL];
+}
 
 var ENDINGS = {
   'ghost': {
@@ -621,6 +707,22 @@ var ENDINGS = {
   'reconditioned': {
     title: 'RECONDITIONED', tag: 'Captured at the final node. Memory wiped.',
     body: "The last thing you remember clearly is the SYNC failing under your fingers. Everything after that belongs to someone else's report — a chair, a wipe, a new set of memories waiting to be issued along with your next assignment. Somewhere, a version of tonight is about to happen again, to someone who won't remember it either."
+  },
+  'burned-out': {
+    title: 'BURNED OUT', tag: 'You made it out. There\'s nothing left to make it out with.',
+    body: "You get clear. Every objective, technically, lands. But you spent everything getting here — every fumble tonight took something with it that isn't coming back tomorrow. You did the job. You just don't have anything left over that feels like winning."
+  },
+  'bought-silence': {
+    title: 'BOUGHT SILENCE', tag: 'Too well-known to just pay off — so they paid more.',
+    body: "The name you've built tonight is worth more to Corp buried than it ever was to you free. The NDA that lands on the table is thicker than the one they usually write, the number bigger, the smile a little tighter — because quiet, for someone like you now, doesn't come cheap."
+  },
+  'silence': {
+    title: 'SILENCE', tag: 'Reached for the AI. Nothing reached back.',
+    body: "You open the channel the way it opened for someone else, once. Nothing answers. Whatever was listening in that server room, it was never listening for you — and now you're standing in the open, holding a decision that isn't going to make itself."
+  },
+  'loop-broken': {
+    title: 'SIGNAL CLEAR', tag: 'Five for five. Whatever\'s been looping this night finally lets go.',
+    body: "Every SYNC lands clean, start to finish, no exceptions — and somewhere underneath the last one, the static this whole night has been running on simply stops. Not louder. Not a victory lap. Just quiet, the specific quiet of a loop that isn't going to reset this time."
   }
 };
 
@@ -630,16 +732,36 @@ function freshState() {
   return {
     nodeIndex: 0,
     lastChoice: null,
+    currentNodes: buildNodeSequence(),
     flags: {
       trust: { corp: 0, street: 0, self: 0 },
       method: { stealth: 0, violence: 0, words: 0 },
       hunted: 0,
+      resolve: 3,
+      notoriety: 0,
       betrayed: false,
       hurt: false,
       aiAlly: false
     },
     syncLog: []
   };
+}
+
+/* ── Time loop: persisted across sessions. Only a flawless run breaks it. ── */
+var LOOP_STORAGE_KEY = 'staticProtocolLoop';
+function loadLoopMeta() {
+  try {
+    var raw = localStorage.getItem(LOOP_STORAGE_KEY);
+    if (!raw) return { count: 0, broken: false };
+    var parsed = JSON.parse(raw);
+    return { count: parsed.count || 0, broken: !!parsed.broken };
+  } catch (e) { return { count: 0, broken: false }; }
+}
+function saveLoopMeta() { try { localStorage.setItem(LOOP_STORAGE_KEY, JSON.stringify(loopMeta)); } catch (e) {} }
+var loopMeta = loadLoopMeta();
+function isReplaying() { return loopMeta.count > 0 && !loopMeta.broken; }
+function isPerfectRun() {
+  return state.flags.hunted === 0 && state.syncLog.length === 5 && state.syncLog.every(function (r) { return r === 'clean'; });
 }
 function clearTimers() { timers.forEach(function (t) { clearTimeout(t); }); timers = []; }
 function addFlags(target, delta) { for (var k in delta) { if (Object.prototype.hasOwnProperty.call(delta, k)) target[k] = (target[k] || 0) + delta[k]; } }
@@ -709,6 +831,15 @@ function enterGame() {
   startMenuEl.hidden = true;
   deviceWrapEl.hidden = false;
   state = freshState();
+  if (isReplaying()) {
+    NODE_ROOFTOP.sync.duration = 1450;
+    NODE_ROOFTOP.scene = NODE_ROOFTOP.scene.slice(0, 2).concat([
+      "Something about this is familiar in a way you can't place — the rain, the angle of the drone's lens, the exact second the alarm mesh usually wakes up. Muscle memory, maybe. Or maybe you've been here before."
+    ]);
+  } else {
+    NODE_ROOFTOP.sync.duration = 1300;
+    NODE_ROOFTOP.scene = NODE_ROOFTOP.scene.slice(0, 2);
+  }
   updateStatusBar();
   renderHome();
   queueNotification(state.nodeIndex);
@@ -719,6 +850,7 @@ function exitToMenu() {
   menuHowtoEl.hidden = true;
   menuMainEl.hidden = false;
   startMenuEl.hidden = false;
+  refreshLoopTag();
 }
 document.getElementById('new-game-btn').addEventListener('click', enterGame);
 document.getElementById('howto-new-game-btn').addEventListener('click', enterGame);
@@ -728,7 +860,7 @@ document.getElementById('howto-back-btn').addEventListener('click', function () 
 function renderHome() {
   clearTimers();
   updateStatusBar();
-  var activeApp = (state && state.nodeIndex < NODES.length) ? NODES[state.nodeIndex].app : null;
+  var activeApp = (state && state.nodeIndex < state.currentNodes.length) ? state.currentNodes[state.nodeIndex].app : null;
   var iconsHtml = APPS.map(function (a) {
     var isActive = a.id === activeApp;
     return (
@@ -763,16 +895,20 @@ function renderInert(title, body) {
 function renderStatusApp() {
   var trustDom = allZero(state.flags.trust) ? 'UNASSIGNED' : dominant(state.flags.trust, ['street', 'self', 'corp']).toUpperCase();
   var methodDom = allZero(state.flags.method) ? 'UNASSIGNED' : dominant(state.flags.method, ['stealth', 'words', 'violence']).toUpperCase();
+  var notorietyDesc = state.flags.notoriety >= 5 ? 'HIGH' : state.flags.notoriety >= 2 ? 'RISING' : 'LOW';
   setPhoneScreen(
     '<div class="app-screen">' +
       '<div class="app-header"><button class="back-btn" id="back-home">←</button><span class="aname">Status</span></div>' +
       '<div class="app-body">' +
-        '<div class="flag-grid" style="grid-template-columns:1fr;">' +
+        '<div class="flag-grid">' +
           '<div class="flag-box"><div class="fk">Network Affinity</div><div class="fv">' + trustDom + '</div></div>' +
           '<div class="flag-box"><div class="fk">Behaviour Profile</div><div class="fv">' + methodDom + '</div></div>' +
           '<div class="flag-box"><div class="fk">Threat Detection</div><div class="fv">' + Math.min(state.flags.hunted, 3) + ' / 3</div></div>' +
+          '<div class="flag-box"><div class="fk">Resolve</div><div class="fv">' + state.flags.resolve + ' / 3</div></div>' +
+          '<div class="flag-box"><div class="fk">Notoriety</div><div class="fv">' + notorietyDesc + '</div></div>' +
           '<div class="flag-box"><div class="fk">Battery</div><div class="fv">' + batteryPct() + '%</div></div>' +
         '</div>' +
+        (loopMeta.count > 0 ? '<p style="font-size:10.5px;color:rgba(217,247,242,0.4);letter-spacing:0.08em;text-transform:uppercase;margin-top:4px;">Loop ' + (loopMeta.count + 1) + (loopMeta.broken ? ' · protocol complete' : '') + '</p>' : '') +
       '</div>' +
     '</div>'
   );
@@ -795,8 +931,8 @@ function showBanner(appDef, title, body, onTap) {
   }, 4500));
 }
 function queueNotification(nodeIndex) {
-  if (nodeIndex >= NODES.length) return;
-  var node = NODES[nodeIndex];
+  if (nodeIndex >= state.currentNodes.length) return;
+  var node = state.currentNodes[nodeIndex];
   if (node.app === 'call') {
     timers.push(setTimeout(function () { renderCall(node); }, 1400));
     return;
@@ -805,7 +941,7 @@ function queueNotification(nodeIndex) {
   timers.push(setTimeout(function () { showBanner(appDef, node.notif.title, node.notif.body, openCurrentNode); }, 700));
 }
 function openCurrentNode() {
-  var node = NODES[state.nodeIndex];
+  var node = state.currentNodes[state.nodeIndex];
   if (node.app === 'call') { renderCall(node); return; }
   renderAppChoice(node);
 }
@@ -850,6 +986,7 @@ function activateChoice(node, idx) {
   state.lastChoice = choice;
   addFlags(state.flags.method, choice.method || {});
   addFlags(state.flags.trust, choice.trust || {});
+  if (choice.method && choice.method.violence) state.flags.notoriety += choice.method.violence;
   if (node.onSelect) node.onSelect(state, choice);
   renderSyncIntro(node, choice);
 }
@@ -1272,6 +1409,8 @@ function bindDpad(handler) {
 /* ── Resolve a SYNC outcome as a system dialog, then move to the next job ── */
 function settleSync(node, choice, result) {
   state.syncLog.push(result);
+  if (result === 'fail') state.flags.resolve = Math.max(0, state.flags.resolve - 2);
+  else if (result === 'partial') state.flags.resolve = Math.max(0, state.flags.resolve - 1);
   if (result === 'fail' && node.onFail) node.onFail(state);
   if (result === 'partial' && node.onPartial) node.onPartial(state);
   updateStatusBar();
@@ -1293,6 +1432,7 @@ function settleSync(node, choice, result) {
   document.getElementById('dialog-ok').addEventListener('click', function () {
     if (isFinal) { renderEnding(choice.id, result); return; }
     state.nodeIndex++;
+    if (state.nodeIndex === 2) state.currentNodes[2] = pickServerVariant(state);
     if (state.flags.hunted >= 3) { renderEnding(null, null); return; }
     renderHome();
     queueNotification(state.nodeIndex);
@@ -1300,14 +1440,16 @@ function settleSync(node, choice, result) {
 }
 
 function computeEnding(choiceId, syncResult) {
+  if (isPerfectRun()) return 'loop-broken';
   if (choiceId === null) return 'hunted-down';
   if (syncResult === 'fail') return 'reconditioned';
   if (state.flags.betrayed && syncResult !== 'clean') return 'betrayed';
+  if (state.flags.resolve <= 0) return 'burned-out';
 
   var methodDom = dominant(state.flags.method, ['stealth', 'words', 'violence']);
   var trustDom = dominant(state.flags.trust, ['street', 'self', 'corp']);
 
-  if (choiceId === 'merge') return 'merged';
+  if (choiceId === 'merge') return state.flags.aiAlly ? 'merged' : 'silence';
   if (choiceId === 'destroy') return 'walk-away';
   if (choiceId === 'vanish') {
     if (methodDom === 'violence') return 'vigilante';
@@ -1315,7 +1457,7 @@ function computeEnding(choiceId, syncResult) {
     return 'walk-away';
   }
   if (choiceId === 'broadcast') return (syncResult === 'clean' && trustDom === 'street') ? 'revolution-spark' : 'martyr';
-  if (choiceId === 'corp') return 'corporate-puppet';
+  if (choiceId === 'corp') return state.flags.notoriety >= 5 ? 'bought-silence' : 'corporate-puppet';
   return 'walk-away';
 }
 
@@ -1323,32 +1465,57 @@ function renderEnding(choiceId, syncResult) {
   clearTimers();
   var key = computeEnding(choiceId, syncResult);
   var ending = ENDINGS[key];
+  var brokeLoop = key === 'loop-broken';
+  var loopsBefore = loopMeta.count;
+  loopMeta.count++;
+  if (brokeLoop) loopMeta.broken = true;
+  saveLoopMeta();
+
   updateStatusBar();
   var trustDom = allZero(state.flags.trust) ? 'NONE' : dominant(state.flags.trust, ['street', 'self', 'corp']).toUpperCase();
   var methodDom = allZero(state.flags.method) ? 'NONE' : dominant(state.flags.method, ['stealth', 'words', 'violence']).toUpperCase();
   var logHtml = state.syncLog.map(function (r) { return '<span class="' + r + '"></span>'; }).join('');
+  var loopParagraph = brokeLoop
+    ? '<p>' + (loopsBefore > 0 ? 'It took ' + (loopsBefore + 1) + ' nights to get here. This is the one that sticks.' : 'First night, first try. Whatever was resetting this loop never even got the chance to run twice.') + '</p>'
+    : '<p style="opacity:0.6;">The static resets. Somewhere, the rooftop is still wet with rain, and it\'s about to start again.</p>';
 
   setPhoneScreen(
     '<div class="app-screen">' +
       '<div class="app-body" style="padding-top:26px;">' +
-        '<p class="eyebrow magenta">Connection terminated</p>' +
+        '<p class="eyebrow magenta">' + (brokeLoop ? 'Loop broken' : 'Connection terminated') + '</p>' +
         '<h1 class="title glitch" data-text="' + ending.title + '">' + ending.title + '</h1>' +
         '<p class="tagline" style="font-style:italic;">' + ending.tag + '</p>' +
-        '<div class="prose"><p>' + ending.body + '</p></div>' +
+        '<div class="prose"><p>' + ending.body + '</p>' + loopParagraph + '</div>' +
         '<div class="flag-grid">' +
           '<div class="flag-box"><div class="fk">Trust leaning</div><div class="fv">' + trustDom + '</div></div>' +
           '<div class="flag-box"><div class="fk">Method leaning</div><div class="fv">' + methodDom + '</div></div>' +
           '<div class="flag-box"><div class="fk">Hunted level</div><div class="fv">' + Math.min(state.flags.hunted, 3) + ' / 3</div></div>' +
+          '<div class="flag-box"><div class="fk">Resolve</div><div class="fv">' + state.flags.resolve + ' / 3</div></div>' +
+          '<div class="flag-box"><div class="fk">Notoriety</div><div class="fv">' + state.flags.notoriety + '</div></div>' +
           '<div class="flag-box"><div class="fk">SYNC record</div><div class="sync-log">' + logHtml + '</div></div>' +
         '</div>' +
-        '<button class="primary-btn" id="again-btn">Run It Back</button>' +
+        '<button class="primary-btn" id="again-btn">' + (brokeLoop ? 'Play Again' : 'Run It Back') + '</button>' +
       '</div>' +
     '</div>'
   );
   document.getElementById('again-btn').addEventListener('click', exitToMenu);
 }
 
+function refreshLoopTag() {
+  var tag = document.getElementById('loop-tag');
+  if (loopMeta.count > 0) {
+    tag.hidden = false;
+    tag.textContent = loopMeta.broken ? 'Protocol complete — free replay' : 'Loop ' + (loopMeta.count + 1);
+    var label = loopMeta.broken ? 'Play Again' : 'Loop Again';
+    ['new-game-btn', 'howto-new-game-btn'].forEach(function (id) {
+      var btn = document.getElementById(id);
+      if (btn) btn.textContent = label;
+    });
+  }
+}
+
 tickClock();
+refreshLoopTag();
 </script>
 </body>
 </html>
