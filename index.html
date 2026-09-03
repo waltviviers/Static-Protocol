@@ -51,6 +51,7 @@
   }
   .bg-video {
     position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 0;
+    transform: scale(1.25);
   }
   .device-wrap::before {
     content: ''; position: absolute; inset: 0; z-index: 1; pointer-events: none;
@@ -62,14 +63,36 @@
     aspect-ratio: 9 / 19.5;
     background: #05050a;
     border-radius: 42px;
-    border: 10px solid #16171f;
-    box-shadow: 0 0 0 1px rgba(34,230,212,0.15), 0 40px 100px rgba(0,0,0,0.7), 0 0 70px rgba(34,230,212,0.06);
+    border: 10px solid transparent;
+    border-image: linear-gradient(160deg, #33283f 0%, #14121f 45%, #0e1a22 75%, #2a1830 100%) 1;
+    box-shadow:
+      0 0 0 1px rgba(34,230,212,0.3),
+      0 0 26px rgba(34,230,212,0.35),
+      0 0 64px rgba(255,61,148,0.28),
+      0 40px 100px rgba(0,0,0,0.8);
     overflow: hidden;
     display: flex; flex-direction: column;
+    animation: phoneNeonPulse 5s ease-in-out infinite;
+  }
+  @keyframes phoneNeonPulse {
+    0%, 100% {
+      box-shadow:
+        0 0 0 1px rgba(34,230,212,0.3),
+        0 0 26px rgba(34,230,212,0.35),
+        0 0 64px rgba(255,61,148,0.28),
+        0 40px 100px rgba(0,0,0,0.8);
+    }
+    50% {
+      box-shadow:
+        0 0 0 1px rgba(34,230,212,0.5),
+        0 0 38px rgba(34,230,212,0.55),
+        0 0 84px rgba(255,61,148,0.42),
+        0 40px 100px rgba(0,0,0,0.8);
+    }
   }
   .notch {
     position: absolute; top: 0; left: 50%; transform: translateX(-50%);
-    width: 38%; height: 20px; background: #16171f; border-radius: 0 0 14px 14px; z-index: 80;
+    width: 38%; height: 20px; background: #1c1a2b; border-radius: 0 0 14px 14px; z-index: 80;
   }
   /* On an actual phone, a drawn bezel is a phone showing a picture of a phone — pointless. Go edge-to-edge and let the real device be the device. */
   @media (max-width: 480px) {
@@ -78,7 +101,8 @@
     .phone {
       width: 100vw; height: 100vh; height: 100dvh;
       max-width: none; aspect-ratio: unset;
-      border: none; border-radius: 0; box-shadow: none;
+      border: none; border-image: none; border-radius: 0; box-shadow: none;
+      animation: none;
     }
     .notch { display: none; }
     .status-bar {
@@ -266,6 +290,31 @@
   .dpad .d-right { grid-column: 3; grid-row: 2; }
   .key-hint { font-size: 9.5px; color: rgba(217,247,242,0.35); letter-spacing: 0.06em; text-align: center; }
 
+  /* ── Timing bar (fixer: sell the cover story) ── */
+  .timing-track { position: relative; width: 260px; height: 10px; background: rgba(217,247,242,0.10); border-radius: 5px; }
+  .timing-zone { position: absolute; top: -5px; bottom: -5px; background: rgba(34,230,212,0.14); border: 1px solid rgba(34,230,212,0.4); border-radius: 5px; }
+  .timing-marker { position: absolute; top: -7px; width: 3px; height: 24px; background: #eafffb; box-shadow: 0 0 10px rgba(234,255,251,0.7); border-radius: 2px; left: 0%; }
+  .timing-marker.hit { background: var(--cyan); box-shadow: 0 0 14px var(--cyan); }
+  .timing-marker.late { background: var(--amber); box-shadow: 0 0 14px var(--amber); }
+  .timing-marker.miss { background: var(--danger); box-shadow: 0 0 14px var(--danger); }
+
+  /* ── Quickdraw (confrontation) ── */
+  .quickdraw-stage {
+    width: 180px; height: 180px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    border: 2px solid rgba(217,247,242,0.15); font-size: 13px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase;
+    color: rgba(217,247,242,0.4); transition: background 0.12s, border-color 0.12s, color 0.12s, box-shadow 0.12s;
+  }
+  .quickdraw-stage.go { background: rgba(34,230,212,0.16); border-color: var(--cyan); color: #eafffb; box-shadow: 0 0 30px rgba(34,230,212,0.5); }
+  .quickdraw-stage.early { background: rgba(255,77,77,0.16); border-color: var(--danger); color: #fff; box-shadow: 0 0 30px rgba(255,77,77,0.4); }
+
+  /* ── Overload (final climax — mixes react + flash prompts) ── */
+  .overload-flash {
+    width: 96px; height: 96px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    border: 2px solid rgba(255,61,148,0.4); font-size: 11.5px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase;
+    color: rgba(217,247,242,0.4); background: rgba(255,61,148,0.06); transition: background 0.1s, box-shadow 0.1s, color 0.1s;
+  }
+  .overload-flash.go { color: #eafffb; background: rgba(255,61,148,0.32); box-shadow: 0 0 26px rgba(255,61,148,0.6); }
+
   .flag-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 20px 0; }
   .flag-box { border: 1px solid var(--panel-line); padding: 10px 12px; }
   .flag-box .fk { font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(217,247,242,0.4); margin-bottom: 5px; }
@@ -414,7 +463,7 @@ var NODES = [
       { id: 'street', icon: 'signal', label: 'Hand it to the Street resistance',      method: { words: 1 },    trust: { street: 2 } },
       { id: 'keep',   icon: 'drive',  label: 'Keep it for yourself',                  method: { stealth: 1 },  trust: { self: 2 } }
     ],
-    sync: { mode: 'react', length: 6, duration: 850, label: 'SELL THE COVER STORY', sub: 'Hold your nerve, glyph by glyph' },
+    sync: { mode: 'timing', rounds: 5, duration: 1500, label: 'SELL THE COVER STORY', sub: 'Stop the signal inside the truth zone' },
     outcomes: {
       clean: function (c) {
         return c.id === 'corp'   ? "You talk the price up twice and the fixer doesn't blink once. Clean money, clean exit."
@@ -479,7 +528,7 @@ var NODES = [
       { id: 'fight',     icon: 'figure', label: 'Fight',                       method: { violence: 2 }, trust: {} },
       { id: 'flee',      icon: 'shadow', label: 'Flee through the crowd',      method: { stealth: 2 },  trust: {} }
     ],
-    sync: { mode: 'react', length: 5, duration: 650, label: 'QUICK-DRAW / DODGE', sub: 'Fastest reflex on the street wins this' },
+    sync: { mode: 'quickdraw', rounds: 4, minDelay: 900, maxDelay: 2200, hitMs: 260, lateMs: 550, label: 'QUICK-DRAW / DODGE', sub: 'Wait for the cue. Fire the instant it drops.' },
     outcomes: {
       clean: function (c) {
         return c.id === 'negotiate' ? "You keep talking, calm and level, until the gun lowers on its own. Nobody bleeds today."
@@ -509,7 +558,7 @@ var NODES = [
       { id: 'destroy',    icon: 'flame',  label: 'Destroy it' },
       { id: 'vanish',     icon: 'shadow', label: 'Vanish' }
     ],
-    sync: { mode: 'react', length: 8, duration: 700, label: 'FULL SYNC — HOLD THE LINE', sub: 'The climax. Everything you\'ve got, right now' },
+    sync: { mode: 'overload', rounds: 9, label: 'FULL SYNC — HOLD THE LINE', sub: 'The climax. Everything you\'ve got, right now' },
     outcomes: { clean: function(){return '';}, partial: function(){return '';}, fail: function(){return '';} },
     onFail: function (state) { state.flags.hunted++; },
     onPartial: function () {}
@@ -798,7 +847,11 @@ function renderSyncIntro(node, choice) {
     '</div>'
   );
   document.getElementById('sync-go').addEventListener('click', function () {
-    if (node.sync.mode === 'memory') runMemorySync(node, choice);
+    var mode = node.sync.mode;
+    if (mode === 'memory') runMemorySync(node, choice);
+    else if (mode === 'timing') runTimingSync(node, choice);
+    else if (mode === 'quickdraw') runQuickdrawSync(node, choice);
+    else if (mode === 'overload') runOverloadSync(node, choice);
     else runReactSync(node, choice);
   });
 }
@@ -870,6 +923,71 @@ function runReactSync(node, choice) {
     settleSync(node, choice, result);
   }
   nextPrompt();
+}
+
+/* ── Timing-mode SYNC: stop a sweeping marker inside a moving target zone ── */
+function runTimingSync(node, choice) {
+  var N = node.sync.rounds, D = node.sync.duration;
+  var hits = 0, lates = 0, misses = 0, round = 0;
+
+  nextRound();
+
+  function nextRound() {
+    if (round >= N) return finish();
+    var zoneCenter = 18 + Math.random() * 64;
+    var lateHalf = 11, hitHalf = 5;
+    setPhoneScreen(
+      '<div class="app-screen">' + screenHeaderHtml(node) +
+        '<div class="app-body" style="text-align:center;">' +
+          '<p class="eyebrow magenta">' + node.sync.label + '</p>' +
+          '<p class="sync-sub">' + (round + 1) + ' / ' + N + '</p>' +
+          '<div class="sync-arena">' +
+            '<div class="timing-track" id="timing-track">' +
+              '<div class="timing-zone" style="left:' + (zoneCenter - lateHalf) + '%;width:' + (lateHalf * 2) + '%;"></div>' +
+              '<div class="timing-marker" id="timing-marker"></div>' +
+            '</div>' +
+            '<button class="primary-btn" id="timing-tap" style="max-width:160px;">Stop It</button>' +
+            '<div class="key-hint">Tap, or press Space / Enter</div>' +
+          '</div>' +
+        '</div>' +
+      '</div>'
+    );
+    var marker = document.getElementById('timing-marker');
+    marker.style.transition = 'none'; marker.style.left = '0%';
+    void marker.offsetWidth;
+    marker.style.transition = 'left ' + D + 'ms linear';
+    requestAnimationFrame(function () { marker.style.left = '100%'; });
+    var startTime = performance.now(), active = true;
+    var timeoutId = setTimeout(function () { if (active) resolve('miss', 100); }, D + 30);
+    timers.push(timeoutId);
+
+    document.getElementById('timing-tap').addEventListener('click', tap);
+    document.getElementById('timing-track').addEventListener('click', tap);
+    document.addEventListener('keydown', keyHandler);
+
+    function tap() {
+      if (!active) return;
+      var elapsed = performance.now() - startTime;
+      var pos = Math.min(100, (elapsed / D) * 100);
+      var dist = Math.abs(pos - zoneCenter);
+      resolve(dist <= hitHalf ? 'hit' : dist <= lateHalf ? 'late' : 'miss', pos);
+    }
+    function keyHandler(e) { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); tap(); } }
+    function resolve(kind, pos) {
+      active = false;
+      clearTimeout(timeoutId);
+      document.removeEventListener('keydown', keyHandler);
+      marker.style.transition = 'none'; marker.style.left = pos + '%';
+      marker.classList.add(kind);
+      if (kind === 'hit') hits++; else if (kind === 'late') lates++; else misses++;
+      round++;
+      timers.push(setTimeout(nextRound, 260));
+    }
+  }
+  function finish() {
+    var result = classify(hits, lates, misses, N);
+    settleSync(node, choice, result);
+  }
 }
 
 /* ── Memory-mode SYNC: flash a pattern, then repeat it ── */
@@ -956,6 +1074,160 @@ function runMemorySync(node, choice) {
       var result = classify(pattern.length - misses, 0, misses, pattern.length);
       timers.push(setTimeout(function () { settleSync(node, choice, result); }, 250));
     }
+  }
+}
+
+/* ── Quickdraw-mode SYNC: wait for the cue, fire the instant it drops ── */
+function runQuickdrawSync(node, choice) {
+  var N = node.sync.rounds, hitMs = node.sync.hitMs, lateMs = node.sync.lateMs;
+  var hits = 0, lates = 0, misses = 0, round = 0;
+
+  nextRound();
+
+  function nextRound() {
+    if (round >= N) return finish();
+    setPhoneScreen(
+      '<div class="app-screen">' + screenHeaderHtml(node) +
+        '<div class="app-body" style="text-align:center;">' +
+          '<p class="eyebrow magenta">' + node.sync.label + '</p>' +
+          '<p class="sync-sub">' + (round + 1) + ' / ' + N + '</p>' +
+          '<div class="sync-arena">' +
+            '<div class="quickdraw-stage wait" id="qd-stage">STEADY</div>' +
+            '<div class="key-hint">Tap, or press Space, the instant it flips</div>' +
+          '</div>' +
+        '</div>' +
+      '</div>'
+    );
+    var stage = document.getElementById('qd-stage');
+    var phase = 'wait', goTime = 0;
+    var delay = node.sync.minDelay + Math.random() * (node.sync.maxDelay - node.sync.minDelay);
+    var goTimer = setTimeout(function () {
+      phase = 'go'; goTime = performance.now();
+      stage.className = 'quickdraw-stage go'; stage.textContent = 'DRAW';
+      timers.push(setTimeout(function () { if (phase === 'go') resolve('miss'); }, lateMs + 40));
+    }, delay);
+    timers.push(goTimer);
+
+    stage.addEventListener('click', act);
+    document.addEventListener('keydown', keyHandler);
+
+    function act() {
+      if (phase === 'wait') { clearTimeout(goTimer); stage.className = 'quickdraw-stage early'; stage.textContent = 'TOO SOON'; resolve('miss'); return; }
+      if (phase !== 'go') return;
+      var rt = performance.now() - goTime;
+      resolve(rt <= hitMs ? 'hit' : rt <= lateMs ? 'late' : 'miss');
+    }
+    function keyHandler(e) { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); act(); } }
+    function resolve(kind) {
+      phase = 'done';
+      document.removeEventListener('keydown', keyHandler);
+      if (kind === 'hit') hits++; else if (kind === 'late') lates++; else misses++;
+      round++;
+      timers.push(setTimeout(nextRound, 500));
+    }
+  }
+  function finish() {
+    var result = classify(hits, lates, misses, N);
+    settleSync(node, choice, result);
+  }
+}
+
+/* ── Overload-mode SYNC: the climax mashup — alternates glyph and flash prompts ── */
+function runOverloadSync(node, choice) {
+  var N = node.sync.rounds;
+  var hits = 0, lates = 0, misses = 0, round = 0, prevGlyph = null;
+
+  nextRound();
+
+  function nextRound() {
+    if (round >= N) return finish();
+    if (Math.random() < 0.55) runGlyphRound(); else runFlashRound();
+  }
+
+  function runGlyphRound() {
+    var D = 620;
+    var currentGlyph = randomGlyph(prevGlyph); prevGlyph = currentGlyph;
+    setPhoneScreen(
+      '<div class="app-screen">' + screenHeaderHtml(node) +
+        '<div class="app-body" style="text-align:center;">' +
+          '<p class="eyebrow magenta">' + node.sync.label + '</p>' +
+          '<p class="sync-sub">' + (round + 1) + ' / ' + N + '</p>' +
+          '<div class="sync-arena">' +
+            '<div class="ring-wrap"><div class="ring-track"></div><div class="ring-fill" id="ring-fill"></div><div class="ring-glyph" id="ring-glyph">' + currentGlyph.sym + '</div></div>' +
+            dpadHtml() +
+            '<div class="key-hint">Arrow keys / WASD, or tap</div>' +
+          '</div>' +
+        '</div>' +
+      '</div>'
+    );
+    var glyphEl = document.getElementById('ring-glyph'), fillEl = document.getElementById('ring-fill');
+    fillEl.style.transition = 'none'; fillEl.style.transform = 'scale(1)';
+    void fillEl.offsetWidth;
+    fillEl.style.transition = 'transform ' + D + 'ms linear';
+    fillEl.style.transform = 'scale(0)';
+    var startTime = performance.now(), active = true;
+    bindDpad(handleInput);
+    document.addEventListener('keydown', keyHandler);
+    timers.push(setTimeout(function () { if (active) resolve('miss'); }, D));
+
+    function handleInput(dirKey) {
+      if (!active) return;
+      if (dirKey !== currentGlyph.key) { resolve('miss'); return; }
+      var elapsed = performance.now() - startTime;
+      resolve(elapsed <= D * 0.9 ? 'hit' : 'late');
+    }
+    function keyHandler(e) { var g = glyphByKey(e.key); if (g) { e.preventDefault(); handleInput(g.key); } }
+    function resolve(kind) {
+      active = false;
+      document.removeEventListener('keydown', keyHandler);
+      if (kind === 'hit') { hits++; glyphEl.classList.add('flash-hit'); }
+      else if (kind === 'late') { lates++; glyphEl.classList.add('flash-late'); fillEl.classList.add('late'); }
+      else { misses++; glyphEl.classList.add('flash-miss'); }
+      round++;
+      timers.push(setTimeout(nextRound, 150));
+    }
+  }
+
+  function runFlashRound() {
+    var windowMs = 480;
+    setPhoneScreen(
+      '<div class="app-screen">' + screenHeaderHtml(node) +
+        '<div class="app-body" style="text-align:center;">' +
+          '<p class="eyebrow magenta">' + node.sync.label + '</p>' +
+          '<p class="sync-sub">' + (round + 1) + ' / ' + N + '</p>' +
+          '<div class="sync-arena">' +
+            '<div class="overload-flash" id="ov-flash">HOLD</div>' +
+            '<div class="key-hint">Tap, or press Space, right now</div>' +
+          '</div>' +
+        '</div>' +
+      '</div>'
+    );
+    var el = document.getElementById('ov-flash');
+    requestAnimationFrame(function () { el.classList.add('go'); el.textContent = 'NOW'; });
+    var startTime = performance.now(), active = true;
+    timers.push(setTimeout(function () { if (active) resolve('miss'); }, windowMs));
+    el.addEventListener('click', act);
+    document.addEventListener('keydown', keyHandler);
+
+    function act() {
+      if (!active) return;
+      var elapsed = performance.now() - startTime;
+      resolve(elapsed <= windowMs * 0.45 ? 'hit' : 'late');
+    }
+    function keyHandler(e) { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); act(); } }
+    function resolve(kind) {
+      active = false;
+      document.removeEventListener('keydown', keyHandler);
+      el.removeEventListener('click', act);
+      if (kind === 'hit') hits++; else if (kind === 'late') lates++; else misses++;
+      round++;
+      timers.push(setTimeout(nextRound, 150));
+    }
+  }
+
+  function finish() {
+    var result = classify(hits, lates, misses, N);
+    settleSync(node, choice, result);
   }
 }
 
