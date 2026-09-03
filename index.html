@@ -468,6 +468,28 @@ var NODE_ROOFTOP = {
     onPartial: function () {}
 };
 
+/* Interludes: pure dialogue, no SYNC — the character beats that balance the action nodes.
+   Each response nudges alignment (good/neutral/evil), which only matters for one thing:
+   staying near-neutral across both is what secretly breaks the loop. */
+var NODE_CHECKIN = {
+    id: 'checkin',
+    art: { accent: '#8b909a' },
+    app: 'messages',
+    sender: 'MARA',
+    notif: { title: 'Messages', body: 'MARA sent you a message' },
+    label: 'INTERLUDE — AN OLD FRIEND CHECKS IN',
+    noSync: true,
+    scene: [
+      "The drone's barely cooled before your phone buzzes. Mara — the only person from your old crew who still has this number, and still uses it.",
+      "\"Heard there's a job going around with your name near it,\" she writes. \"Just — be smart out there, yeah? Whatever you're doing.\""
+    ],
+    choices: [
+      { id: 'reassure', icon: 'talk',   label: 'Tell her the truth, gently',       align: { good: 2 },    response: "You tell her enough to matter and none of the parts that would keep her up at night. \"I'll be careful,\" you add, and for once you mean it." },
+      { id: 'deflect',  icon: 'shadow', label: 'Keep it vague, change the subject', align: { neutral: 2 }, response: "You give her nothing she can worry about and nothing she can use — just enough small talk to close the conversation without closing the door." },
+      { id: 'cut-off',  icon: 'door',   label: 'Tell her to stop checking on you',  align: { evil: 2 },    response: "You're short with her, sharper than you mean to be, and by the time you notice it's too late to take it back. She doesn't write again tonight." }
+    ]
+};
+
 var NODE_FIXER = {
     id: 'fixer',
     art: { accent: '#ffcf3d' },
@@ -611,6 +633,25 @@ function pickServerVariant(state) {
   return NODE_SERVER_STREET;
 }
 
+var NODE_WITNESS = {
+    id: 'witness',
+    art: { accent: '#8b909a' },
+    app: 'messages',
+    sender: 'UNKNOWN NUMBER',
+    notif: { title: 'Messages', body: 'Unknown number is messaging you' },
+    label: 'INTERLUDE — SOMEONE SAW YOU',
+    noSync: true,
+    scene: [
+      "Your phone lights up with a number you don't recognise, one very close call after the server room. \"I saw you in there,\" it says. \"I'm not calling anyone. Yet.\"",
+      "Whoever it is, they're not asking for money. They're asking what you're going to do about what you just took."
+    ],
+    choices: [
+      { id: 'promise',   icon: 'talk',   label: 'Promise them it\'ll be used right',        align: { good: 2 },    response: "You mean it when you say it, and something in the silence on the other end suggests they believe you, at least a little." },
+      { id: 'noncommit', icon: 'shadow', label: 'Say nothing you can be held to',            align: { neutral: 2 }, response: "You keep it noncommittal — not a lie, not a promise, just enough words to end the conversation without starting anything else." },
+      { id: 'threaten',  icon: 'figure', label: 'Make it clear silence is the only option',  align: { evil: 2 },    response: "You make yourself very clear. The reply, when it comes, is just: \"understood.\" You believe them. You're not proud of that." }
+    ]
+};
+
 var NODE_CONFRONTATION = {
     id: 'confrontation',
     art: { accent: '#ff4d4d' },
@@ -664,8 +705,9 @@ var NODE_FINAL = {
 };
 
 function buildNodeSequence() {
-  return [NODE_ROOFTOP, NODE_FIXER, null, NODE_CONFRONTATION, NODE_FINAL];
+  return [NODE_ROOFTOP, NODE_CHECKIN, NODE_FIXER, null, NODE_WITNESS, NODE_CONFRONTATION, NODE_FINAL];
 }
+var SERVER_BRANCH_INDEX = 3;
 
 var ENDINGS = {
   'ghost': {
@@ -721,8 +763,8 @@ var ENDINGS = {
     body: "You open the channel the way it opened for someone else, once. Nothing answers. Whatever was listening in that server room, it was never listening for you — and now you're standing in the open, holding a decision that isn't going to make itself."
   },
   'loop-broken': {
-    title: 'SIGNAL CLEAR', tag: 'Five for five. Whatever\'s been looping this night finally lets go.',
-    body: "Every SYNC lands clean, start to finish, no exceptions — and somewhere underneath the last one, the static this whole night has been running on simply stops. Not louder. Not a victory lap. Just quiet, the specific quiet of a loop that isn't going to reset this time."
+    title: 'SIGNAL CLEAR', tag: 'Never fully good, never fully gone. The static doesn\'t know what to do with that.',
+    body: "You never pick a side all the way through — not Corp's, not the Street's, not even fully your own. Somewhere underneath that refusal to commit, the static this whole night has been running on simply loses its grip. Not louder. Not a victory lap. Just quiet, the specific quiet of a loop that finally doesn't know how to reset you."
   }
 };
 
@@ -736,6 +778,7 @@ function freshState() {
     flags: {
       trust: { corp: 0, street: 0, self: 0 },
       method: { stealth: 0, violence: 0, words: 0 },
+      alignment: { good: 0, neutral: 0, evil: 0 },
       hunted: 0,
       resolve: 3,
       notoriety: 0,
@@ -747,7 +790,7 @@ function freshState() {
   };
 }
 
-/* ── Time loop: persisted across sessions. Only a flawless run breaks it. ── */
+/* ── Time loop: persisted across sessions. Only staying level-headed breaks it. ── */
 var LOOP_STORAGE_KEY = 'staticProtocolLoop';
 function loadLoopMeta() {
   try {
@@ -760,8 +803,8 @@ function loadLoopMeta() {
 function saveLoopMeta() { try { localStorage.setItem(LOOP_STORAGE_KEY, JSON.stringify(loopMeta)); } catch (e) {} }
 var loopMeta = loadLoopMeta();
 function isReplaying() { return loopMeta.count > 0 && !loopMeta.broken; }
-function isPerfectRun() {
-  return state.flags.hunted === 0 && state.syncLog.length === 5 && state.syncLog.every(function (r) { return r === 'clean'; });
+function isNeutralAligned() {
+  return dominant(state.flags.alignment, ['neutral', 'good', 'evil']) === 'neutral';
 }
 function clearTimers() { timers.forEach(function (t) { clearTimeout(t); }); timers = []; }
 function addFlags(target, delta) { for (var k in delta) { if (Object.prototype.hasOwnProperty.call(delta, k)) target[k] = (target[k] || 0) + delta[k]; } }
@@ -896,6 +939,8 @@ function renderStatusApp() {
   var trustDom = allZero(state.flags.trust) ? 'UNASSIGNED' : dominant(state.flags.trust, ['street', 'self', 'corp']).toUpperCase();
   var methodDom = allZero(state.flags.method) ? 'UNASSIGNED' : dominant(state.flags.method, ['stealth', 'words', 'violence']).toUpperCase();
   var notorietyDesc = state.flags.notoriety >= 5 ? 'HIGH' : state.flags.notoriety >= 2 ? 'RISING' : 'LOW';
+  var alignDom = dominant(state.flags.alignment, ['neutral', 'good', 'evil']);
+  var readDesc = alignDom === 'good' ? 'WARM' : alignDom === 'evil' ? 'COLD' : 'UNREADABLE';
   setPhoneScreen(
     '<div class="app-screen">' +
       '<div class="app-header"><button class="back-btn" id="back-home">←</button><span class="aname">Status</span></div>' +
@@ -906,6 +951,7 @@ function renderStatusApp() {
           '<div class="flag-box"><div class="fk">Threat Detection</div><div class="fv">' + Math.min(state.flags.hunted, 3) + ' / 3</div></div>' +
           '<div class="flag-box"><div class="fk">Resolve</div><div class="fv">' + state.flags.resolve + ' / 3</div></div>' +
           '<div class="flag-box"><div class="fk">Notoriety</div><div class="fv">' + notorietyDesc + '</div></div>' +
+          '<div class="flag-box"><div class="fk">Emotional Read</div><div class="fv">' + readDesc + '</div></div>' +
           '<div class="flag-box"><div class="fk">Battery</div><div class="fv">' + batteryPct() + '%</div></div>' +
         '</div>' +
         (loopMeta.count > 0 ? '<p style="font-size:10.5px;color:rgba(217,247,242,0.4);letter-spacing:0.08em;text-transform:uppercase;margin-top:4px;">Loop ' + (loopMeta.count + 1) + (loopMeta.broken ? ' · protocol complete' : '') + '</p>' : '') +
@@ -986,9 +1032,34 @@ function activateChoice(node, idx) {
   state.lastChoice = choice;
   addFlags(state.flags.method, choice.method || {});
   addFlags(state.flags.trust, choice.trust || {});
+  addFlags(state.flags.alignment, choice.align || {});
   if (choice.method && choice.method.violence) state.flags.notoriety += choice.method.violence;
   if (node.onSelect) node.onSelect(state, choice);
+  if (node.noSync) { resolveDialogue(node, choice); return; }
   renderSyncIntro(node, choice);
+}
+
+/* ── Dialogue nodes skip SYNC entirely — a response, a consequence, then onward ── */
+function resolveDialogue(node, choice) {
+  clearTimers();
+  var overlay = document.createElement('div');
+  overlay.className = 'dialog-overlay';
+  overlay.innerHTML =
+    '<div class="dialog-card">' +
+      '<p class="dtitle" style="color:' + node.art.accent + '">MESSAGE SENT</p>' +
+      '<p class="dbody">' + choice.response + '</p>' +
+      '<button class="dialog-ok" id="dialog-ok">Continue</button>' +
+    '</div>';
+  phoneScreen.appendChild(overlay);
+  document.getElementById('dialog-ok').addEventListener('click', advanceToNextNode);
+}
+
+function advanceToNextNode() {
+  state.nodeIndex++;
+  if (state.nodeIndex === SERVER_BRANCH_INDEX) state.currentNodes[SERVER_BRANCH_INDEX] = pickServerVariant(state);
+  if (state.flags.hunted >= 3) { renderEnding(null, null); return; }
+  renderHome();
+  queueNotification(state.nodeIndex);
 }
 
 function renderSyncIntro(node, choice) {
@@ -1431,18 +1502,14 @@ function settleSync(node, choice, result) {
   phoneScreen.appendChild(overlay);
   document.getElementById('dialog-ok').addEventListener('click', function () {
     if (isFinal) { renderEnding(choice.id, result); return; }
-    state.nodeIndex++;
-    if (state.nodeIndex === 2) state.currentNodes[2] = pickServerVariant(state);
-    if (state.flags.hunted >= 3) { renderEnding(null, null); return; }
-    renderHome();
-    queueNotification(state.nodeIndex);
+    advanceToNextNode();
   });
 }
 
 function computeEnding(choiceId, syncResult) {
-  if (isPerfectRun()) return 'loop-broken';
   if (choiceId === null) return 'hunted-down';
   if (syncResult === 'fail') return 'reconditioned';
+  if (isNeutralAligned()) return 'loop-broken';
   if (state.flags.betrayed && syncResult !== 'clean') return 'betrayed';
   if (state.flags.resolve <= 0) return 'burned-out';
 
@@ -1474,6 +1541,8 @@ function renderEnding(choiceId, syncResult) {
   updateStatusBar();
   var trustDom = allZero(state.flags.trust) ? 'NONE' : dominant(state.flags.trust, ['street', 'self', 'corp']).toUpperCase();
   var methodDom = allZero(state.flags.method) ? 'NONE' : dominant(state.flags.method, ['stealth', 'words', 'violence']).toUpperCase();
+  var alignDomEnd = dominant(state.flags.alignment, ['neutral', 'good', 'evil']);
+  var readDescEnd = alignDomEnd === 'good' ? 'WARM' : alignDomEnd === 'evil' ? 'COLD' : 'UNREADABLE';
   var logHtml = state.syncLog.map(function (r) { return '<span class="' + r + '"></span>'; }).join('');
   var loopParagraph = brokeLoop
     ? '<p>' + (loopsBefore > 0 ? 'It took ' + (loopsBefore + 1) + ' nights to get here. This is the one that sticks.' : 'First night, first try. Whatever was resetting this loop never even got the chance to run twice.') + '</p>'
@@ -1492,6 +1561,7 @@ function renderEnding(choiceId, syncResult) {
           '<div class="flag-box"><div class="fk">Hunted level</div><div class="fv">' + Math.min(state.flags.hunted, 3) + ' / 3</div></div>' +
           '<div class="flag-box"><div class="fk">Resolve</div><div class="fv">' + state.flags.resolve + ' / 3</div></div>' +
           '<div class="flag-box"><div class="fk">Notoriety</div><div class="fv">' + state.flags.notoriety + '</div></div>' +
+          '<div class="flag-box"><div class="fk">Emotional read</div><div class="fv">' + readDescEnd + '</div></div>' +
           '<div class="flag-box"><div class="fk">SYNC record</div><div class="sync-log">' + logHtml + '</div></div>' +
         '</div>' +
         '<button class="primary-btn" id="again-btn">' + (brokeLoop ? 'Play Again' : 'Run It Back') + '</button>' +

@@ -2,7 +2,9 @@
 
 A cyberpunk interactive story, played entirely on your phone — and looping until you get it right.
 
-You're a runner working a data heist. Five jobs come through your phone tonight — a rooftop extraction, a fixer's booth, a corp server room, a confrontation, and one final call on what to do with what you stole. Each one plays out inside a real app on your screen: a tracker pings an incoming threat, a messages thread waits on your reply, a hacking tool needs a pattern matched under pressure, a call comes in you can't ignore, a transmit screen waits on a destination.
+You're a runner working a data heist. Five jobs come through your phone tonight — a rooftop extraction, a fixer's booth, a corp server room, a confrontation, and one final call on what to do with what you stole — interspersed with quieter moments where someone just wants a straight answer from you. Each one plays out inside a real app on your screen: a tracker pings an incoming threat, a messages thread waits on your reply, a hacking tool needs a pattern matched under pressure, a call comes in you can't ignore, a transmit screen waits on a destination.
+
+Not every beat is an action sequence. Twice a night, someone reaches out with nothing to hack or dodge — just a question you have to answer honestly, evasively, or coldly. Those three tones matter more than they look like they do.
 
 Every choice triggers a live **SYNC** sequence — a short, tense minigame tuned to what's happening in the scene: reflex dodging for evading a drone scan, a timing bar for talking your way past a fixer, a memory pattern for a stealth hack, a quick-draw reaction duel for a street confrontation, and a mashed-up climax that throws all of it at you at once. Clean it and your choice plays out exactly as intended. Fumble it and the job gets forced sideways, whether you meant it to or not.
 
@@ -10,7 +12,7 @@ Every choice triggers a live **SYNC** sequence — a short, tense minigame tuned
 
 **Five tracked stats**, not three: who you trust, how you get things done, how much heat you've drawn, your resolve (it drops every time a SYNC goes sideways, and burning out changes how the night ends even if you technically make it), and your notoriety (get famous enough and buying your silence costs a lot more). Recruiting the rogue AI only pays off later if you actually earned its trust first.
 
-**It's a loop.** Every ending except one sends you back to try again — the game remembers, across sessions, how many times you've been through tonight. Only a flawless run, every single SYNC clean, breaks it for good.
+**It's a loop.** Every ending except one sends you back to try again — the game remembers, across sessions, how many times you've been through tonight. Breaking it for good has nothing to do with how clean your SYNCs were.
 
 ## Playing it
 
