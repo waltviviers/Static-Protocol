@@ -110,10 +110,7 @@
   ::-webkit-scrollbar-thumb { background: rgba(34,230,212,0.25); }
 
   /* ── Lock screen ── */
-  .lock-screen { position: relative; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 20px; overflow: hidden; }
-  .lock-bg-video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 0; }
-  .lock-scrim { position: absolute; inset: 0; z-index: 1; background: linear-gradient(180deg, rgba(5,5,10,0.55) 0%, rgba(5,5,10,0.75) 55%, rgba(5,5,10,0.92) 100%); }
-  .lock-content { position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center; width: 100%; }
+  .lock-screen { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 20px; }
   .lock-time { font-size: 46px; font-weight: 300; margin-bottom: 4px; letter-spacing: -0.02em; }
   .lock-date { font-size: 11px; color: rgba(217,247,242,0.45); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 46px; }
   .lock-brand { font-size: 1.3rem; font-weight: 800; letter-spacing: 0.06em; margin-bottom: 10px; }
@@ -323,7 +320,7 @@
     // Desktop only — on the mobile breakpoint the phone fills the screen and the video is never seen.
     if (window.matchMedia('(min-width: 481px)').matches) {
       var bgVideo = document.getElementById('bg-video');
-      bgVideo.src = 'magnific_just-a-subtle-loop_s7NG0CJl8e.mp4';
+      bgVideo.src = 'magnific_no-moths-way-more-flicker_3zVs6SqREY.mp4';
       bgVideo.play().catch(function () {});
     }
   </script>
@@ -685,17 +682,13 @@ function renderLock() {
   clearTimers();
   setPhoneScreen(
     '<div class="lock-screen">' +
-      '<video class="lock-bg-video" autoplay loop muted playsinline aria-hidden="true" src="magnific_no-moths-way-more-flicker_3zVs6SqREY.mp4"></video>' +
-      '<div class="lock-scrim" aria-hidden="true"></div>' +
-      '<div class="lock-content">' +
-        '<div class="lock-time" id="lock-time-face">--:--</div>' +
-        '<div class="lock-date">' + formattedDate() + '</div>' +
-        '<div class="lock-brand glitch" data-text="STATIC PROTOCOL">STATIC PROTOCOL</div>' +
-        '<div class="lock-copy">This is the runner\'s phone. Five jobs come through tonight — however you handle them, on this screen, is however this goes.</div>' +
-        '<div class="menu-actions">' +
-          '<button class="primary-btn" id="new-game-btn">New Game</button>' +
-          '<button class="ghost-btn" id="how-to-play-btn">How To Play</button>' +
-        '</div>' +
+      '<div class="lock-time" id="lock-time-face">--:--</div>' +
+      '<div class="lock-date">' + formattedDate() + '</div>' +
+      '<div class="lock-brand glitch" data-text="STATIC PROTOCOL">STATIC PROTOCOL</div>' +
+      '<div class="lock-copy">This is the runner\'s phone. Five jobs come through tonight — however you handle them, on this screen, is however this goes.</div>' +
+      '<div class="menu-actions">' +
+        '<button class="primary-btn" id="new-game-btn">New Game</button>' +
+        '<button class="ghost-btn" id="how-to-play-btn">How To Play</button>' +
       '</div>' +
     '</div>'
   );
