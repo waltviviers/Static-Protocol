@@ -63,36 +63,14 @@
     aspect-ratio: 9 / 19.5;
     background: #05050a;
     border-radius: 42px;
-    border: 10px solid transparent;
-    border-image: linear-gradient(160deg, #33283f 0%, #14121f 45%, #0e1a22 75%, #2a1830 100%) 1;
-    box-shadow:
-      0 0 0 1px rgba(34,230,212,0.3),
-      0 0 26px rgba(34,230,212,0.35),
-      0 0 64px rgba(255,61,148,0.28),
-      0 40px 100px rgba(0,0,0,0.8);
+    border: 10px solid #16171f;
+    box-shadow: 0 0 0 1px rgba(34,230,212,0.15), 0 40px 100px rgba(0,0,0,0.7), 0 0 70px rgba(34,230,212,0.06);
     overflow: hidden;
     display: flex; flex-direction: column;
-    animation: phoneNeonPulse 5s ease-in-out infinite;
-  }
-  @keyframes phoneNeonPulse {
-    0%, 100% {
-      box-shadow:
-        0 0 0 1px rgba(34,230,212,0.3),
-        0 0 26px rgba(34,230,212,0.35),
-        0 0 64px rgba(255,61,148,0.28),
-        0 40px 100px rgba(0,0,0,0.8);
-    }
-    50% {
-      box-shadow:
-        0 0 0 1px rgba(34,230,212,0.5),
-        0 0 38px rgba(34,230,212,0.55),
-        0 0 84px rgba(255,61,148,0.42),
-        0 40px 100px rgba(0,0,0,0.8);
-    }
   }
   .notch {
     position: absolute; top: 0; left: 50%; transform: translateX(-50%);
-    width: 38%; height: 20px; background: #1c1a2b; border-radius: 0 0 14px 14px; z-index: 80;
+    width: 38%; height: 20px; background: #16171f; border-radius: 0 0 14px 14px; z-index: 80;
   }
   /* On an actual phone, a drawn bezel is a phone showing a picture of a phone — pointless. Go edge-to-edge and let the real device be the device. */
   @media (max-width: 480px) {
@@ -101,8 +79,7 @@
     .phone {
       width: 100vw; height: 100vh; height: 100dvh;
       max-width: none; aspect-ratio: unset;
-      border: none; border-image: none; border-radius: 0; box-shadow: none;
-      animation: none;
+      border: none; border-radius: 0; box-shadow: none;
     }
     .notch { display: none; }
     .status-bar {
