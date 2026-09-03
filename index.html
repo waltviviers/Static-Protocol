@@ -49,6 +49,7 @@
     display: flex; align-items: center; justify-content: center;
     padding: max(20px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-right)) max(20px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left));
   }
+  .device-wrap[hidden] { display: none; }
   .bg-video {
     position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 0;
     transform: scale(1.25);
@@ -109,13 +110,18 @@
   ::-webkit-scrollbar { width: 5px; }
   ::-webkit-scrollbar-thumb { background: rgba(34,230,212,0.25); }
 
-  /* ── Lock screen ── */
-  .lock-screen { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 20px; }
-  .lock-time { font-size: 46px; font-weight: 300; margin-bottom: 4px; letter-spacing: -0.02em; }
-  .lock-date { font-size: 11px; color: rgba(217,247,242,0.45); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 46px; }
-  .lock-brand { font-size: 1.3rem; font-weight: 800; letter-spacing: 0.06em; margin-bottom: 10px; }
-  .lock-copy { font-size: 11.5px; color: rgba(217,247,242,0.5); max-width: 240px; line-height: 1.7; }
-  .menu-actions { display: flex; flex-direction: column; gap: 10px; width: 100%; max-width: 230px; margin-top: 50px; }
+  /* ── Start menu: a separate full-screen title screen, not part of the phone ── */
+  .start-menu { position: fixed; inset: 0; z-index: 200; overflow: hidden; display: flex; align-items: center; justify-content: center; text-align: center; padding: 24px; }
+  .start-menu[hidden] { display: none; }
+  .menu-bg-video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 0; }
+  .menu-scrim { position: absolute; inset: 0; z-index: 1; background: linear-gradient(180deg, rgba(5,5,10,0.5) 0%, rgba(5,5,10,0.78) 58%, rgba(5,5,10,0.94) 100%); }
+  .menu-panel { position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center; width: 100%; max-width: 340px; }
+  .menu-panel[hidden] { display: none; }
+  .menu-brand { font-size: 2.1rem; font-weight: 800; letter-spacing: 0.06em; margin-bottom: 16px; }
+  .menu-copy { font-size: 13px; color: rgba(217,247,242,0.65); max-width: 300px; line-height: 1.7; }
+  .menu-howto { max-width: 380px; }
+  .menu-howto .prose { text-align: left; }
+  .menu-actions { display: flex; flex-direction: column; gap: 10px; width: 100%; max-width: 230px; margin-top: 44px; }
   .ghost-btn {
     display: flex; width: 100%; align-items: center; justify-content: center;
     background: rgba(255,255,255,0.06); border: 1px solid rgba(217,247,242,0.25); color: #d9f7f2;
@@ -314,13 +320,39 @@
 </style>
 </head>
 <body>
-<div class="device-wrap">
+<div class="start-menu" id="start-menu">
+  <video class="menu-bg-video" autoplay loop muted playsinline aria-hidden="true" src="magnific_no-moths-way-more-flicker_3zVs6SqREY.mp4"></video>
+  <div class="menu-scrim" aria-hidden="true"></div>
+  <div class="menu-panel" id="menu-main">
+    <div class="menu-brand glitch" data-text="STATIC PROTOCOL">STATIC PROTOCOL</div>
+    <div class="menu-copy">A cyberpunk data heist, played entirely on the runner's phone. Five jobs tonight — however you handle them is however this goes.</div>
+    <div class="menu-actions">
+      <button class="primary-btn" id="new-game-btn">New Game</button>
+      <button class="ghost-btn" id="how-to-play-btn">How To Play</button>
+    </div>
+  </div>
+  <div class="menu-panel menu-howto" id="menu-howto" hidden>
+    <div class="eyebrow magenta">How To Play</div>
+    <div class="prose">
+      <p>This is the runner's phone. Five jobs come through tonight. Tap a notification to open the app it lands in, then pick how you handle it.</p>
+      <p>Every choice triggers a live <b>SYNC</b> — a short minigame, different for every job. Tap the prompts, or use arrow keys / WASD / Space on desktop. Clean it and your choice plays out exactly as intended; fumble it and the job gets forced sideways.</p>
+      <p>Fumble too many and the heat — the signal bars, top right — climbs. Three strikes and the job ends for you, whatever you decide next.</p>
+      <p>Ten different endings are waiting, built from who you trusted, how you got it done, and how steady your hands were.</p>
+    </div>
+    <div class="menu-actions">
+      <button class="primary-btn" id="howto-new-game-btn">New Game</button>
+      <button class="ghost-btn" id="howto-back-btn">Back</button>
+    </div>
+  </div>
+</div>
+
+<div class="device-wrap" id="device-wrap" hidden>
   <video class="bg-video" id="bg-video" loop muted playsinline preload="none" aria-hidden="true"></video>
   <script>
     // Desktop only — on the mobile breakpoint the phone fills the screen and the video is never seen.
     if (window.matchMedia('(min-width: 481px)').matches) {
       var bgVideo = document.getElementById('bg-video');
-      bgVideo.src = 'magnific_no-moths-way-more-flicker_3zVs6SqREY.mp4';
+      bgVideo.src = 'magnific_just-a-subtle-loop_s7NG0CJl8e.mp4';
       bgVideo.play().catch(function () {});
     }
   </script>
@@ -642,10 +674,6 @@ function tickClock() {
   paint();
   setInterval(paint, 15000);
 }
-function formattedDate() {
-  var d = new Date();
-  return d.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' }).toUpperCase();
-}
 
 /* ── Rendering ── */
 var phoneScreen = document.getElementById('phone-screen');
@@ -671,51 +699,31 @@ function bindChoiceControls(node) {
   });
 }
 
-function startNewGame() {
+/* ── Start menu: a separate full-screen title screen, not part of the phone ── */
+var startMenuEl = document.getElementById('start-menu');
+var deviceWrapEl = document.getElementById('device-wrap');
+var menuMainEl = document.getElementById('menu-main');
+var menuHowtoEl = document.getElementById('menu-howto');
+
+function enterGame() {
+  startMenuEl.hidden = true;
+  deviceWrapEl.hidden = false;
   state = freshState();
   updateStatusBar();
   renderHome();
   queueNotification(state.nodeIndex);
 }
-
-function renderLock() {
+function exitToMenu() {
   clearTimers();
-  setPhoneScreen(
-    '<div class="lock-screen">' +
-      '<div class="lock-time" id="lock-time-face">--:--</div>' +
-      '<div class="lock-date">' + formattedDate() + '</div>' +
-      '<div class="lock-brand glitch" data-text="STATIC PROTOCOL">STATIC PROTOCOL</div>' +
-      '<div class="lock-copy">This is the runner\'s phone. Five jobs come through tonight — however you handle them, on this screen, is however this goes.</div>' +
-      '<div class="menu-actions">' +
-        '<button class="primary-btn" id="new-game-btn">New Game</button>' +
-        '<button class="ghost-btn" id="how-to-play-btn">How To Play</button>' +
-      '</div>' +
-    '</div>'
-  );
-  var lf = document.getElementById('lock-time-face'); if (lf) lf.textContent = new Date().toTimeString().slice(0, 5);
-  document.getElementById('new-game-btn').addEventListener('click', startNewGame);
-  document.getElementById('how-to-play-btn').addEventListener('click', renderHowToPlay);
+  deviceWrapEl.hidden = true;
+  menuHowtoEl.hidden = true;
+  menuMainEl.hidden = false;
+  startMenuEl.hidden = false;
 }
-
-function renderHowToPlay() {
-  clearTimers();
-  setPhoneScreen(
-    '<div class="app-screen">' +
-      '<div class="app-header"><button class="back-btn" id="back-start">←</button><span class="aname">How To Play</span></div>' +
-      '<div class="app-body">' +
-        '<div class="prose">' +
-          '<p>This is the runner\'s phone. Five jobs come through tonight. Tap a notification to open the app it lands in, then pick how you handle it.</p>' +
-          '<p>Every choice triggers a live <b>SYNC</b> — a short minigame, different for every job. Tap the prompts, or use arrow keys / WASD / Space on desktop. Clean it and your choice plays out exactly as intended; fumble it and the job gets forced sideways.</p>' +
-          '<p>Fumble too many and the heat — the signal bars, top right — climbs. Three strikes and the job ends for you, whatever you decide next.</p>' +
-          '<p>Ten different endings are waiting, built from who you trusted, how you got it done, and how steady your hands were.</p>' +
-        '</div>' +
-        '<button class="primary-btn" id="start-from-howto">New Game</button>' +
-      '</div>' +
-    '</div>'
-  );
-  document.getElementById('back-start').addEventListener('click', renderLock);
-  document.getElementById('start-from-howto').addEventListener('click', startNewGame);
-}
+document.getElementById('new-game-btn').addEventListener('click', enterGame);
+document.getElementById('howto-new-game-btn').addEventListener('click', enterGame);
+document.getElementById('how-to-play-btn').addEventListener('click', function () { menuMainEl.hidden = true; menuHowtoEl.hidden = false; });
+document.getElementById('howto-back-btn').addEventListener('click', function () { menuHowtoEl.hidden = true; menuMainEl.hidden = false; });
 
 function renderHome() {
   clearTimers();
@@ -1337,11 +1345,10 @@ function renderEnding(choiceId, syncResult) {
       '</div>' +
     '</div>'
   );
-  document.getElementById('again-btn').addEventListener('click', renderLock);
+  document.getElementById('again-btn').addEventListener('click', exitToMenu);
 }
 
 tickClock();
-renderLock();
 </script>
 </body>
 </html>
