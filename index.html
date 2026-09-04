@@ -199,8 +199,9 @@
   .bubble-row.in .bubble { background: rgba(255,255,255,0.16); border: 1px solid rgba(255,255,255,0.14); border-bottom-left-radius: 4px; }
   .bubble-row.out .bubble { background: var(--cyan); color: #05050a; border-bottom-right-radius: 4px; }
   .quick-replies { display: flex; flex-direction: column; gap: 8px; margin-top: 18px; }
-  .quick-reply { text-align: left; padding: 11px 14px; border-radius: 14px; border: 1px solid rgba(34,230,212,0.45); background: rgba(34,230,212,0.10); font-size: 12.5px; }
+  .quick-reply { display: flex; align-items: center; gap: 8px; text-align: left; padding: 11px 14px; border-radius: 14px; border: 1px solid rgba(34,230,212,0.45); background: rgba(34,230,212,0.10); font-size: 12.5px; }
   .quick-reply:active { background: rgba(34,230,212,0.12); }
+  .quick-reply.skill-check { border-color: rgba(255,207,61,0.5); background: rgba(255,207,61,0.08); }
 
   /* ── Tracker ── */
   .radar-wrap { display: flex; justify-content: center; padding: 6px 0 20px; }
@@ -223,6 +224,11 @@
   .action-row .aicon2 { width: 30px; height: 30px; border-radius: 9px; background: rgba(255,255,255,0.06); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
   .action-row .aicon2 svg { width: 30px; height: 30px; }
   .action-row:active { background: rgba(34,230,212,0.1); }
+  .action-row.skill-check { border-color: rgba(255,207,61,0.4); background: rgba(255,207,61,0.06); }
+  .skill-tag {
+    margin-left: auto; flex-shrink: 0; font-size: 8.5px; letter-spacing: 0.1em; color: var(--amber);
+    border: 1px solid rgba(255,207,61,0.4); border-radius: 999px; padding: 3px 7px;
+  }
 
   /* ── Call screen ── */
   .call-screen { display: flex; flex-direction: column; align-items: center; padding: 44px 20px 22px; min-height: 100%; }
@@ -534,8 +540,11 @@ var NODE_CHECKIN = {
     choices: [
       { id: 'reassure', icon: 'talk',   label: 'Tell her the truth, gently',       align: { good: 2 },    response: "You tell her enough to matter and none of the parts that would keep her up at night. \"I'll be careful,\" you add, and for once you mean it." },
       { id: 'deflect',  icon: 'shadow', label: 'Keep it vague, change the subject', align: { neutral: 2 }, response: "You give her nothing she can worry about and nothing she can use — just enough small talk to close the conversation without closing the door." },
-      { id: 'cut-off',  icon: 'door',   label: 'Tell her to stop checking on you',  align: { evil: 2 },    response: "You're short with her, sharper than you mean to be, and by the time you notice it's too late to take it back. She doesn't write again tonight." }
-    ]
+      { id: 'cut-off',  icon: 'door',   label: 'Tell her to stop checking on you',  align: { evil: 2 },    response: "You're short with her, sharper than you mean to be, and by the time you notice it's too late to take it back. She doesn't write again tonight." },
+      { id: 'reroute',  icon: 'signal', label: 'Talk her down completely',          align: { good: 1, neutral: 1 }, requires: { skill: 'charisma', min: 2 },
+        response: "You talk her all the way down — not vague, not clinical, just steady and sure enough that she actually believes it. \"Okay,\" she finally says. \"Okay. Just — text me after.\" It costs you nothing and buys you something you can't quite name." }
+    ],
+    onSelect: function (state, choice) { if (choice.id === 'reroute') state.flags.resolve = Math.min(3, state.flags.resolve + 1); }
 };
 
 var NODE_FIXER = {
@@ -696,8 +705,11 @@ var NODE_WITNESS = {
     choices: [
       { id: 'promise',   icon: 'talk',   label: 'Promise them it\'ll be used right',        align: { good: 2 },    response: "You mean it when you say it, and something in the silence on the other end suggests they believe you, at least a little." },
       { id: 'noncommit', icon: 'shadow', label: 'Say nothing you can be held to',            align: { neutral: 2 }, response: "You keep it noncommittal — not a lie, not a promise, just enough words to end the conversation without starting anything else." },
-      { id: 'threaten',  icon: 'figure', label: 'Make it clear silence is the only option',  align: { evil: 2 },    response: "You make yourself very clear. The reply, when it comes, is just: \"understood.\" You believe them. You're not proud of that." }
-    ]
+      { id: 'threaten',  icon: 'figure', label: 'Make it clear silence is the only option',  align: { evil: 2 },    response: "You make yourself very clear. The reply, when it comes, is just: \"understood.\" You believe them. You're not proud of that." },
+      { id: 'trace',     icon: 'terminal', label: 'Trace the number and lock it down',       align: { neutral: 2 }, requires: { skill: 'hacking', min: 2 },
+        response: "You're already tracing the number before you've finished reading the text — three hops, a burner, a dead end that isn't quite dead. You don't need to threaten anyone. You just need them to know you could find them exactly as easily as they found you. The line goes quiet, and stays that way." }
+    ],
+    onSelect: function (state, choice) { if (choice.id === 'trace') state.flags.resolve = Math.min(3, state.flags.resolve + 1); }
 };
 
 var NODE_CONFRONTATION = {
@@ -834,6 +846,8 @@ function freshState() {
       hurt: false,
       aiAlly: false
     },
+    skills: { hacking: 0, combat: 0, charisma: 0 },
+    xp: 0,
     syncLog: []
   };
 }
@@ -862,6 +876,39 @@ function dominant(obj, order) {
   return best;
 }
 function allZero(obj) { for (var k in obj) if (obj[k]) return false; return true; }
+
+/* ── Skills & XP: earned by method (stealth/violence/words) in SYNC results, gate a bonus
+   dialogue option per interlude and let a well-trained skill skip a matching SYNC outright. ── */
+var METHOD_TO_SKILL = { stealth: 'hacking', violence: 'combat', words: 'charisma' };
+var SKIP_THRESHOLD = 2;
+function xpLevel() { return Math.floor(state.xp / 30) + 1; }
+function awardXp(amount) { if (amount) state.xp += amount; }
+function dominantMethodKey(methodObj) {
+  if (!methodObj) return null;
+  var best = null, bestVal = 0;
+  for (var k in methodObj) { if (methodObj[k] > bestVal) { best = k; bestVal = methodObj[k]; } }
+  return best;
+}
+function trainSkills(choice, result) {
+  var mult = result === 'clean' ? 1 : result === 'partial' ? 0.5 : 0;
+  if (!mult || !choice || !choice.method) return;
+  for (var k in choice.method) {
+    var skillKey = METHOD_TO_SKILL[k];
+    if (skillKey && choice.method[k]) state.skills[skillKey] += choice.method[k] * mult;
+  }
+}
+function skillForChoice(choice) {
+  var key = dominantMethodKey(choice && choice.method);
+  return key ? METHOD_TO_SKILL[key] : null;
+}
+function skipEligible(choice) {
+  var skill = skillForChoice(choice);
+  return !!skill && state.skills[skill] >= SKIP_THRESHOLD;
+}
+function meetsRequirement(choice) {
+  if (!choice.requires) return true;
+  return (state.skills[choice.requires.skill] || 0) >= choice.requires.min;
+}
 
 function classify(hits, lates, misses, N) {
   var failThreshold = Math.ceil(N / 2);
@@ -912,7 +959,9 @@ function screenHeaderHtml(node) {
 }
 function actionListHtml(node) {
   return '<div class="action-list">' + node.choices.map(function (c, i) {
-    return '<button class="action-row" data-idx="' + i + '"><span class="aicon2" style="color:' + node.art.accent + '">' + choiceIconSvg(c.icon, node.art.accent) + '</span>' + c.label + '</button>';
+    if (!meetsRequirement(c)) return '';
+    var tag = c.requires ? '<span class="skill-tag">' + c.requires.skill.toUpperCase() + '</span>' : '';
+    return '<button class="action-row' + (c.requires ? ' skill-check' : '') + '" data-idx="' + i + '"><span class="aicon2" style="color:' + node.art.accent + '">' + choiceIconSvg(c.icon, node.art.accent) + '</span>' + c.label + tag + '</button>';
   }).join('') + '</div>';
 }
 function bindChoiceControls(node) {
@@ -1024,15 +1073,22 @@ function statBarRow(label, value, groupMax) {
   return '<div class="stat-row"><span class="stat-label">' + label + '</span><div class="stat-track"><div class="stat-fill" style="width:' + pct + '%"></div></div><span class="stat-val">' + value + '</span></div>';
 }
 function renderStatsApp() {
-  var t = state.flags.trust, m = state.flags.method, a = state.flags.alignment;
+  var t = state.flags.trust, m = state.flags.method, a = state.flags.alignment, s = state.skills;
   var trustMax = Math.max(t.street, t.self, t.corp, 1);
   var methodMax = Math.max(m.stealth, m.words, m.violence, 1);
   var alignMax = Math.max(a.good, a.neutral, a.evil, 1);
   var notorietyMax = Math.max(state.flags.notoriety, 5);
+  var skillMax = Math.max(s.hacking, s.combat, s.charisma, SKIP_THRESHOLD);
   setPhoneScreen(
     '<div class="app-screen">' +
       '<div class="app-header"><button class="back-btn" id="back-home">←</button><span class="aname">Stats</span></div>' +
       '<div class="app-body">' +
+        '<div class="stat-group"><div class="stat-title">Level ' + xpLevel() + ' · ' + state.xp + ' XP</div>' +
+          statBarRow('Hacking', Math.round(s.hacking * 10) / 10, skillMax) +
+          statBarRow('Combat', Math.round(s.combat * 10) / 10, skillMax) +
+          statBarRow('Charisma', Math.round(s.charisma * 10) / 10, skillMax) +
+          '<p style="font-size:9.5px;color:rgba(217,247,242,0.35);letter-spacing:0.05em;margin-top:8px;">Reach ' + SKIP_THRESHOLD + ' in a skill to skip its SYNC, and unlock bonus dialogue.</p>' +
+        '</div>' +
         '<div class="stat-group"><div class="stat-title">Trust</div>' +
           statBarRow('Street', t.street, trustMax) + statBarRow('Self', t.self, trustMax) + statBarRow('Corp', t.corp, trustMax) +
         '</div>' +
@@ -1096,7 +1152,11 @@ function renderAppChoice(node) {
   if (node.app === 'messages') {
     bodyHtml =
       node.scene.map(function (p) { return '<div class="bubble-row in"><div class="bubble">' + p + '</div></div>'; }).join('') +
-      '<div class="quick-replies">' + node.choices.map(function (c, i) { return '<button class="quick-reply" data-idx="' + i + '">' + c.label + '</button>'; }).join('') + '</div>';
+      '<div class="quick-replies">' + node.choices.map(function (c, i) {
+        if (!meetsRequirement(c)) return '';
+        var tag = c.requires ? '<span class="skill-tag">' + c.requires.skill.toUpperCase() + '</span>' : '';
+        return '<button class="quick-reply' + (c.requires ? ' skill-check' : '') + '" data-idx="' + i + '">' + c.label + tag + '</button>';
+      }).join('') + '</div>';
   } else if (node.app === 'tracker') {
     bodyHtml =
       '<div class="radar-wrap"><div class="radar"><span class="you"></span><span class="blip" style="top:16%;left:68%;"></span></div></div>' +
@@ -1140,6 +1200,7 @@ function activateChoice(node, idx) {
 /* ── Dialogue nodes skip SYNC entirely — a response, a consequence, then onward ── */
 function resolveDialogue(node, choice) {
   clearTimers();
+  awardXp(5);
   var overlay = document.createElement('div');
   overlay.className = 'dialog-overlay';
   overlay.innerHTML =
@@ -1161,12 +1222,15 @@ function advanceToNextNode() {
 }
 
 function renderSyncIntro(node, choice) {
+  var skill = skillForChoice(choice);
+  var canSkip = skipEligible(choice);
   setPhoneScreen(
     '<div class="app-screen">' + screenHeaderHtml(node) +
       '<div class="app-body" style="text-align:center;">' +
         '<p class="eyebrow magenta">' + node.sync.label + '</p>' +
         '<p class="sync-sub" style="margin-bottom:20px;">' + node.sync.sub + '</p>' +
         '<button class="primary-btn" id="sync-go">Initiate SYNC</button>' +
+        (canSkip ? '<button class="ghost-btn" id="sync-skip" style="margin-top:10px;">Skip — ' + skill.toUpperCase() + ' handles it</button>' : '') +
       '</div>' +
     '</div>'
   );
@@ -1178,6 +1242,9 @@ function renderSyncIntro(node, choice) {
     else if (mode === 'overload') runOverloadSync(node, choice);
     else runDodgeSync(node, choice);
   });
+  if (canSkip) {
+    document.getElementById('sync-skip').addEventListener('click', function () { settleSync(node, choice, 'clean'); });
+  }
 }
 
 /* ── Dodge-mode SYNC: tap the gap before a closing ring catches it ── */
@@ -1585,6 +1652,8 @@ function bindDpad(handler) {
 /* ── Resolve a SYNC outcome as a system dialog, then move to the next job ── */
 function settleSync(node, choice, result) {
   state.syncLog.push(result);
+  awardXp(result === 'clean' ? 15 : result === 'partial' ? 6 : 0);
+  trainSkills(choice, result);
   if (result === 'fail') state.flags.resolve = Math.max(0, state.flags.resolve - 2);
   else if (result === 'partial') state.flags.resolve = Math.max(0, state.flags.resolve - 1);
   if (result === 'fail' && node.onFail) node.onFail(state);
