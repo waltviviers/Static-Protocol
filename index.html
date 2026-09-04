@@ -73,6 +73,16 @@
     position: absolute; top: 0; left: 50%; transform: translateX(-50%);
     width: 38%; height: 20px; background: #16171f; border-radius: 0 0 14px 14px; z-index: 80;
   }
+  .phone-bg {
+    position: absolute; inset: 0; z-index: 0; pointer-events: none;
+    background: url('phone-bg-portrait.jpg') center 18% / cover no-repeat;
+    opacity: 0.25;
+    animation: phoneBgLive 16s ease-in-out infinite;
+  }
+  @keyframes phoneBgLive {
+    0%, 100% { transform: scale(1.05) translate(0, 0); }
+    50% { transform: scale(1.12) translate(-1.2%, -1.6%); }
+  }
   /* On an actual phone, a drawn bezel is a phone showing a picture of a phone — pointless. Go edge-to-edge and let the real device be the device. */
   @media (max-width: 480px) {
     .device-wrap { padding: 0; background: var(--bg); }
@@ -372,6 +382,7 @@
     }
   </script>
   <div class="phone">
+    <div class="phone-bg" aria-hidden="true"></div>
     <div class="notch" aria-hidden="true"></div>
     <div class="status-bar">
       <span id="clock-time">23:47</span>
