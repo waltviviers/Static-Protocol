@@ -286,6 +286,23 @@
   .dodge-target.late { background: var(--amber); box-shadow: 0 0 14px var(--amber); }
   .dodge-ring { position: absolute; width: 60px; height: 60px; border-radius: 50%; border: 2px solid rgba(255,77,77,0.55); transform: translate(-50%,-50%) scale(1); transition: transform linear, border-color linear; }
   .dodge-ring.late { border-color: var(--amber); }
+  .drone-hud { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px; }
+  .drone-score { font-size: 22px; font-weight: 800; color: var(--cyan); }
+  .drone-best { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(217,247,242,0.45); }
+  .drone-wrap {
+    position: relative; width: 100%; height: 360px; border-radius: 16px;
+    border: 1px solid rgba(217,247,242,0.15);
+    background: linear-gradient(180deg, rgba(34,230,212,0.07) 0%, rgba(5,5,10,0.5) 100%);
+    overflow: hidden; touch-action: manipulation;
+  }
+  .drone-wrap canvas { display: block; width: 100%; height: 100%; }
+  .drone-hint { text-align: center; font-size: 10.5px; color: rgba(217,247,242,0.4); letter-spacing: 0.05em; margin-top: 12px; }
+  .drone-overlay {
+    position: absolute; inset: 0; z-index: 2; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 12px;
+    background: rgba(3,3,4,0.8); text-align: center; padding: 20px;
+  }
+  .drone-overlay-score { font-size: 34px; font-weight: 800; color: var(--cyan); }
 
   /* ── Hit feedback: a brief brightness pulse, safe to layer on any element regardless of its own transform ── */
   @keyframes hitFlash { 0% { filter: brightness(1); } 25% { filter: brightness(2.4); } 100% { filter: brightness(1); } }
@@ -467,7 +484,8 @@ var APP_ICONS = {
   camera:   function () { return '<rect x="3" y="7" width="18" height="13" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="12" cy="13.5" r="4" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 7l1.5-2.5h5L16 7" fill="none" stroke="currentColor" stroke-width="1.5"/>'; },
   notes:    function () { return '<rect x="5" y="3" width="14" height="18" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/><line x1="8" y1="8" x2="16" y2="8" stroke="currentColor" stroke-width="1.3"/><line x1="8" y1="12" x2="16" y2="12" stroke="currentColor" stroke-width="1.3"/><line x1="8" y1="16" x2="13" y2="16" stroke="currentColor" stroke-width="1.3"/>'; },
   status:   function () { return '<path d="M12 3l7 3.5v5c0 5-3 8.5-7 9.5-4-1-7-4.5-7-9.5v-5L12 3z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M9 12l2 2 4-4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>'; },
-  stats:    function () { return '<rect x="4" y="14" width="4" height="7" rx="1" fill="none" stroke="currentColor" stroke-width="1.5"/><rect x="10" y="9" width="4" height="12" rx="1" fill="none" stroke="currentColor" stroke-width="1.5"/><rect x="16" y="4" width="4" height="17" rx="1" fill="none" stroke="currentColor" stroke-width="1.5"/>'; }
+  stats:    function () { return '<rect x="4" y="14" width="4" height="7" rx="1" fill="none" stroke="currentColor" stroke-width="1.5"/><rect x="10" y="9" width="4" height="12" rx="1" fill="none" stroke="currentColor" stroke-width="1.5"/><rect x="16" y="4" width="4" height="17" rx="1" fill="none" stroke="currentColor" stroke-width="1.5"/>'; },
+  dronegame: function () { return '<line x1="12" y1="8" x2="12" y2="16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="8" y1="12" x2="16" y2="12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="6" cy="6" r="2.2" fill="none" stroke="currentColor" stroke-width="1.4"/><circle cx="18" cy="6" r="2.2" fill="none" stroke="currentColor" stroke-width="1.4"/><circle cx="6" cy="18" r="2.2" fill="none" stroke="currentColor" stroke-width="1.4"/><circle cx="18" cy="18" r="2.2" fill="none" stroke="currentColor" stroke-width="1.4"/><line x1="7.5" y1="7.5" x2="10.3" y2="10.3" stroke="currentColor" stroke-width="1.3"/><line x1="16.5" y1="7.5" x2="13.7" y2="10.3" stroke="currentColor" stroke-width="1.3"/><line x1="7.5" y1="16.5" x2="10.3" y2="13.7" stroke="currentColor" stroke-width="1.3"/><line x1="16.5" y1="16.5" x2="13.7" y2="13.7" stroke="currentColor" stroke-width="1.3"/>'; }
 };
 function appIconSvg(id) { return '<svg viewBox="0 0 24 24">' + (APP_ICONS[id] ? APP_ICONS[id]() : '') + '</svg>'; }
 
@@ -479,7 +497,8 @@ var APPS = [
   { id: 'camera',   name: 'Cam',      icon: 'camera',   color: '#8b909a' },
   { id: 'notes',    name: 'Notes',    icon: 'notes',    color: '#8b909a' },
   { id: 'status',   name: 'Status',   icon: 'status',   color: '#8b909a' },
-  { id: 'stats',    name: 'Stats',    icon: 'stats',    color: '#ffcf3d' }
+  { id: 'stats',    name: 'Stats',    icon: 'stats',    color: '#ffcf3d' },
+  { id: 'drone',    name: 'Drone',    icon: 'dronegame', color: '#22e6d4' }
 ];
 function appById(id) { for (var i = 0; i < APPS.length; i++) if (APPS[i].id === id) return APPS[i]; return null; }
 
@@ -939,6 +958,11 @@ function freshState() {
   };
 }
 
+/* ── Drone high score: a small arcade side-game, persisted separately from the loop. ── */
+var DRONE_HIGH_KEY = 'staticProtocolDroneHigh';
+function loadDroneHigh() { try { return parseInt(localStorage.getItem(DRONE_HIGH_KEY), 10) || 0; } catch (e) { return 0; } }
+function saveDroneHigh(v) { try { localStorage.setItem(DRONE_HIGH_KEY, String(v)); } catch (e) {} }
+
 /* ── Time loop: persisted across sessions. Only staying level-headed breaks it. ── */
 var LOOP_STORAGE_KEY = 'staticProtocolLoop';
 function loadLoopMeta() {
@@ -1113,6 +1137,7 @@ function renderHome() {
       if (id === activeApp) { openCurrentNode(); }
       else if (id === 'status') { renderStatusApp(); }
       else if (id === 'stats') { renderStatsApp(); }
+      else if (id === 'drone') { renderDroneGame(); }
       else if (id === 'camera') { renderInert('Camera', 'No photos yet. Nothing on this roll — you\'ve been busy.'); }
       else if (id === 'notes') { renderInert('Notes', 'STEAL DRIVE. DON\'T DIE.\n\nJob notes, from the last time you thought you could plan for this.'); }
     });
@@ -1200,6 +1225,133 @@ function renderStatsApp() {
     '</div>'
   );
   document.getElementById('back-home').addEventListener('click', renderHome);
+}
+
+/* ── Drone: a flappy-bird side game, threading skyscraper gaps. Purely optional. ── */
+function renderDroneGame() {
+  clearTimers();
+  var best = loadDroneHigh();
+  setPhoneScreen(
+    '<div class="app-screen">' +
+      '<div class="app-header"><button class="back-btn" id="back-home">←</button><span class="aname">Drone</span></div>' +
+      '<div class="app-body">' +
+        '<div class="drone-hud"><span class="drone-score" id="drone-score">0</span><span class="drone-best" id="drone-best">Best ' + best + '</span></div>' +
+        '<div class="drone-wrap" id="drone-wrap"><canvas id="drone-canvas"></canvas></div>' +
+        '<p class="drone-hint">Tap, click, or press Space to climb</p>' +
+      '</div>' +
+    '</div>'
+  );
+
+  var wrap = document.getElementById('drone-wrap');
+  var canvas = document.getElementById('drone-canvas');
+  var scoreEl = document.getElementById('drone-score');
+  var bestEl = document.getElementById('drone-best');
+  var ctx = canvas.getContext('2d');
+  var W = canvas.width = wrap.clientWidth;
+  var H = canvas.height = wrap.clientHeight;
+
+  var GRAVITY = 0.32, FLAP = -6.2, BUILD_W = 46;
+  var drone = { x: 0, y: 0, r: 10, vy: 0 };
+  var buildings = [], score = 0, running = true, started = false, spawnTimer = 0, rafId = null;
+
+  function reset() {
+    if (rafId) cancelAnimationFrame(rafId);
+    drone.x = W * 0.28; drone.y = H / 2; drone.vy = 0;
+    buildings = []; score = 0; started = false; running = true; spawnTimer = 0;
+    scoreEl.textContent = '0';
+  }
+  reset();
+
+  function spawnBuilding() {
+    var gapH = Math.max(90, H * 0.28);
+    var gapY = 40 + Math.random() * Math.max(20, H - gapH - 80);
+    buildings.push({ x: W + 10, gapY: gapY, gapH: gapH, passed: false });
+  }
+
+  function flap() {
+    if (!running) return;
+    started = true;
+    drone.vy = FLAP;
+    haptic(12);
+  }
+
+  function die() {
+    if (!running) return;
+    running = false;
+    if (score > best) { best = score; saveDroneHigh(best); }
+    bestEl.textContent = 'Best ' + best;
+    var overlay = document.createElement('div');
+    overlay.className = 'drone-overlay';
+    overlay.innerHTML =
+      '<p class="eyebrow magenta" style="margin:0;">SIGNAL LOST</p>' +
+      '<div class="drone-overlay-score">' + score + '</div>' +
+      '<button class="primary-btn" id="drone-retry" style="width:auto;padding:12px 28px;">Fly Again</button>';
+    wrap.appendChild(overlay);
+    document.getElementById('drone-retry').addEventListener('click', function () {
+      overlay.remove();
+      reset();
+      loop();
+    });
+  }
+
+  function loop() {
+    rafId = requestAnimationFrame(loop);
+    if (!running) return;
+    ctx.clearRect(0, 0, W, H);
+
+    if (started) {
+      drone.vy += GRAVITY;
+      drone.y += drone.vy;
+    }
+
+    spawnTimer -= 1;
+    if (spawnTimer <= 0) { spawnBuilding(); spawnTimer = Math.max(70, 100 - score * 1.5); }
+
+    var speed = 2.4 + Math.min(score * 0.04, 2);
+    for (var i = buildings.length - 1; i >= 0; i--) {
+      var b = buildings[i];
+      b.x -= speed;
+      if (b.x + BUILD_W < 0) { buildings.splice(i, 1); continue; }
+      if (!b.passed && b.x + BUILD_W < drone.x) { b.passed = true; score++; scoreEl.textContent = String(score); }
+
+      ctx.fillStyle = 'rgba(34,230,212,0.18)';
+      ctx.strokeStyle = 'rgba(34,230,212,0.55)';
+      ctx.lineWidth = 1.5;
+      ctx.fillRect(b.x, 0, BUILD_W, b.gapY);
+      ctx.strokeRect(b.x, 0, BUILD_W, b.gapY);
+      ctx.fillRect(b.x, b.gapY + b.gapH, BUILD_W, H - (b.gapY + b.gapH));
+      ctx.strokeRect(b.x, b.gapY + b.gapH, BUILD_W, H - (b.gapY + b.gapH));
+
+      if (drone.x + drone.r > b.x && drone.x - drone.r < b.x + BUILD_W) {
+        if (drone.y - drone.r < b.gapY || drone.y + drone.r > b.gapY + b.gapH) die();
+      }
+    }
+
+    ctx.save();
+    ctx.translate(drone.x, drone.y);
+    ctx.rotate(Math.max(-0.5, Math.min(0.9, drone.vy * 0.06)));
+    ctx.fillStyle = '#22e6d4';
+    ctx.shadowColor = '#22e6d4';
+    ctx.shadowBlur = 12;
+    ctx.beginPath();
+    ctx.arc(0, 0, drone.r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+
+    if (drone.y - drone.r < 0 || drone.y + drone.r > H) die();
+  }
+  loop();
+
+  function onKey(e) { if (e.code === 'Space' || e.key === ' ') { e.preventDefault(); flap(); } }
+  canvas.addEventListener('pointerdown', flap);
+  document.addEventListener('keydown', onKey);
+
+  document.getElementById('back-home').addEventListener('click', function () {
+    running = false;
+    if (rafId) cancelAnimationFrame(rafId);
+    document.removeEventListener('keydown', onKey);
+    renderHome();
+  });
 }
 
 /* ── Notifications route the player into the right app for the current node ── */
