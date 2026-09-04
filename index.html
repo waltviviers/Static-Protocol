@@ -335,6 +335,26 @@
   .wallpaper-tile.active .wallpaper-swatch { border-color: var(--cyan); box-shadow: 0 0 14px rgba(34,230,212,0.4); }
   .wallpaper-name { font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(217,247,242,0.6); }
 
+  .exfil-hud { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px; }
+  .exfil-hud-group { display: flex; gap: 14px; }
+  .exfil-stat { font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(217,247,242,0.5); }
+  .exfil-stat b { color: var(--cyan); font-weight: 700; }
+  .exfil-best { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(217,247,242,0.45); }
+  .exfil-wrap {
+    position: relative; width: 100%; height: 360px; border-radius: 16px;
+    border: 1px solid rgba(217,247,242,0.15);
+    background: linear-gradient(180deg, rgba(34,230,212,0.07) 0%, rgba(5,5,10,0.5) 100%);
+    overflow: hidden; touch-action: manipulation;
+  }
+  .exfil-wrap canvas { display: block; width: 100%; height: 100%; }
+  .exfil-hint { text-align: center; font-size: 10.5px; color: rgba(217,247,242,0.4); letter-spacing: 0.05em; margin-top: 12px; }
+  .exfil-overlay {
+    position: absolute; inset: 0; z-index: 2; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 12px;
+    background: rgba(3,3,4,0.8); text-align: center; padding: 20px;
+  }
+  .exfil-overlay-score { font-size: 30px; font-weight: 800; color: var(--cyan); }
+
   /* ── Hit feedback: a brief brightness pulse, safe to layer on any element regardless of its own transform ── */
   @keyframes hitFlash { 0% { filter: brightness(1); } 25% { filter: brightness(2.4); } 100% { filter: brightness(1); } }
   .hit-pulse { animation: hitFlash 0.3s ease-out; }
@@ -520,7 +540,9 @@ var APP_ICONS = {
   dronegame: function () { return '<line x1="12" y1="8" x2="12" y2="16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="8" y1="12" x2="16" y2="12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="6" cy="6" r="2.2" fill="none" stroke="currentColor" stroke-width="1.4"/><circle cx="18" cy="6" r="2.2" fill="none" stroke="currentColor" stroke-width="1.4"/><circle cx="6" cy="18" r="2.2" fill="none" stroke="currentColor" stroke-width="1.4"/><circle cx="18" cy="18" r="2.2" fill="none" stroke="currentColor" stroke-width="1.4"/><line x1="7.5" y1="7.5" x2="10.3" y2="10.3" stroke="currentColor" stroke-width="1.3"/><line x1="16.5" y1="7.5" x2="13.7" y2="10.3" stroke="currentColor" stroke-width="1.3"/><line x1="7.5" y1="16.5" x2="10.3" y2="13.7" stroke="currentColor" stroke-width="1.3"/><line x1="16.5" y1="16.5" x2="13.7" y2="13.7" stroke="currentColor" stroke-width="1.3"/>'; },
   trophy:   function () { return '<path d="M7 4h10v4a5 5 0 0 1-10 0V4z" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M7 5H4v2a3 3 0 0 0 3 3" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="M17 5h3v2a3 3 0 0 1-3 3" fill="none" stroke="currentColor" stroke-width="1.3"/><line x1="12" y1="13" x2="12" y2="20" stroke="currentColor" stroke-width="1.5"/><line x1="8" y1="20" x2="16" y2="20" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>'; },
   contacts: function () { return '<rect x="4" y="3" width="16" height="18" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="12" cy="10" r="3" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M7 17c0-2.5 2-4 5-4s5 1.5 5 4" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>'; },
-  wallpaper: function () { return '<rect x="3" y="4" width="18" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="8.5" cy="9.5" r="1.6" fill="currentColor"/><path d="M4 16l5-5 4 4 3-3 4 4" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>'; }
+  wallpaper: function () { return '<rect x="3" y="4" width="18" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="8.5" cy="9.5" r="1.6" fill="currentColor"/><path d="M4 16l5-5 4 4 3-3 4 4" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>'; },
+  walthome: function () { return '<path d="M4 11l8-7 8 7" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M6 10v9h12v-9" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><line x1="10" y1="19" x2="10" y2="14" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>'; },
+  exfilgame: function () { return '<path d="M12 3l3 5v6H9V8l3-5z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><circle cx="12" cy="9" r="1.2" fill="currentColor"/><path d="M9 14l-2 3M15 14l2 3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M10 17l2 4 2-4" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>'; }
 };
 function appIconSvg(id) { return '<svg viewBox="0 0 24 24">' + (APP_ICONS[id] ? APP_ICONS[id]() : '') + '</svg>'; }
 
@@ -536,7 +558,9 @@ var APPS = [
   { id: 'drone',    name: 'Drone',    icon: 'dronegame', color: '#22e6d4' },
   { id: 'trophy',   name: 'Endings',  icon: 'trophy',    color: '#ffcf3d' },
   { id: 'contacts', name: 'Contacts', icon: 'contacts',  color: '#8b909a' },
-  { id: 'wallpaper', name: 'Wallpaper', icon: 'wallpaper', color: '#ff3d94' }
+  { id: 'wallpaper', name: 'Wallpaper', icon: 'wallpaper', color: '#ff3d94' },
+  { id: 'exfil',    name: 'Exfil',    icon: 'exfilgame', color: '#22e6d4' },
+  { id: 'walt',     name: 'WALT',     icon: 'walthome',  color: '#8b909a' }
 ];
 function appById(id) { for (var i = 0; i < APPS.length; i++) if (APPS[i].id === id) return APPS[i]; return null; }
 
@@ -1001,6 +1025,11 @@ var DRONE_HIGH_KEY = 'staticProtocolDroneHigh';
 function loadDroneHigh() { try { return parseInt(localStorage.getItem(DRONE_HIGH_KEY), 10) || 0; } catch (e) { return 0; } }
 function saveDroneHigh(v) { try { localStorage.setItem(DRONE_HIGH_KEY, String(v)); } catch (e) {} }
 
+/* ── Exfil high score: best clean-landing score, persisted separately. ── */
+var EXFIL_HIGH_KEY = 'staticProtocolExfilHigh';
+function loadExfilHigh() { try { return parseInt(localStorage.getItem(EXFIL_HIGH_KEY), 10) || 0; } catch (e) { return 0; } }
+function saveExfilHigh(v) { try { localStorage.setItem(EXFIL_HIGH_KEY, String(v)); } catch (e) {} }
+
 /* ── Endings unlocked: which of the ENDINGS keys have been reached, across loops. ── */
 var ENDINGS_SEEN_KEY = 'staticProtocolEndingsSeen';
 function loadEndingsSeen() {
@@ -1118,7 +1147,8 @@ var AudioEngine = (function () {
     open:   { freq: 480, type: 'triangle', dur: 0.09, vol: 0.09 },
     ending: { freq: 260, type: 'sine',     dur: 0.55, vol: 0.15, up: true },
     flap:   { freq: 620, type: 'sine',     dur: 0.05, vol: 0.09 },
-    crash:  { freq: 110, type: 'sawtooth', dur: 0.32, vol: 0.19, down: true }
+    crash:  { freq: 110, type: 'sawtooth', dur: 0.32, vol: 0.19, down: true },
+    land:   { freq: 480, type: 'sine',     dur: 0.45, vol: 0.16, up: true }
   };
   function sfx(name) {
     var c = ensureCtx(); if (!c) return;
@@ -1346,6 +1376,8 @@ function renderHome() {
       else if (id === 'trophy') { renderTrophyApp(); }
       else if (id === 'contacts') { renderContactsApp(); }
       else if (id === 'wallpaper') { renderWallpaperApp(); }
+      else if (id === 'exfil') { renderExfilGame(); }
+      else if (id === 'walt') { window.location.href = 'https://waltviviers.com/'; }
       else if (id === 'camera') { renderInert('Camera', 'No photos yet. Nothing on this roll — you\'ve been busy.'); }
       else if (id === 'notes') { renderInert('Notes', 'STEAL DRIVE. DON\'T DIE.\n\nJob notes, from the last time you thought you could plan for this.'); }
     });
@@ -1652,6 +1684,170 @@ function renderWallpaperApp() {
       applyWallpaper(id);
       renderWallpaperApp();
     });
+  });
+}
+
+/* ── Exfil: a lunar-lander clone, threading gravity and a rooftop pad. ── */
+function renderExfilGame() {
+  clearTimers();
+  var best = loadExfilHigh();
+  setPhoneScreen(
+    '<div class="app-screen">' +
+      '<div class="app-header"><button class="back-btn" id="back-home">←</button><span class="aname">Exfil</span></div>' +
+      '<div class="app-body">' +
+        '<div class="exfil-hud">' +
+          '<div class="exfil-hud-group">' +
+            '<span class="exfil-stat">ALT <b id="exfil-alt">0</b></span>' +
+            '<span class="exfil-stat">VEL <b id="exfil-vel">0</b></span>' +
+            '<span class="exfil-stat">FUEL <b id="exfil-fuel">100</b></span>' +
+          '</div>' +
+          '<span class="exfil-best" id="exfil-best">Best ' + best + '</span>' +
+        '</div>' +
+        '<div class="exfil-wrap" id="exfil-wrap"><canvas id="exfil-canvas"></canvas></div>' +
+        '<p class="exfil-hint">Hold to burn thrust. Land soft, on the pad.</p>' +
+      '</div>' +
+    '</div>'
+  );
+
+  var wrap = document.getElementById('exfil-wrap');
+  var canvas = document.getElementById('exfil-canvas');
+  var altEl = document.getElementById('exfil-alt');
+  var velEl = document.getElementById('exfil-vel');
+  var fuelEl = document.getElementById('exfil-fuel');
+  var bestEl = document.getElementById('exfil-best');
+  var ctx = canvas.getContext('2d');
+  var W = canvas.width = wrap.clientWidth;
+  var H = canvas.height = wrap.clientHeight;
+
+  var GRAVITY = 0.05, THRUST = -0.115, FUEL_BURN = 0.55, PAD_W = 58, GROUND_Y = H - 26;
+  var SAFE_VY = 1.8, SAFE_VX = 1.5;
+  var ship = { x: 0, y: 0, r: 9, vx: 0, vy: 0 };
+  var padX = 0, fuel = 100, thrusting = false, running = true, rafId = null, skyline = [];
+
+  function reset() {
+    if (rafId) cancelAnimationFrame(rafId);
+    ship.x = W * 0.5; ship.y = H * 0.12; ship.vy = 0;
+    ship.vx = (Math.random() < 0.5 ? -1 : 1) * (0.6 + Math.random() * 0.4);
+    fuel = 100; running = true; thrusting = false;
+    padX = 20 + Math.random() * Math.max(20, W - 40 - PAD_W);
+    skyline = [];
+    var x = 0;
+    while (x < W) {
+      var w = 24 + Math.random() * 30;
+      skyline.push({ x: x, w: w, h: 20 + Math.random() * 70 });
+      x += w + 4;
+    }
+    altEl.textContent = '0'; velEl.textContent = '0'; fuelEl.textContent = '100';
+  }
+  reset();
+
+  function startThrust() { if (running) { thrusting = true; haptic(10); } }
+  function stopThrust() { thrusting = false; }
+
+  function die(success, score) {
+    if (!running) return;
+    running = false;
+    if (success) {
+      AudioEngine.sfx('land');
+      if (score > best) { best = score; saveExfilHigh(best); }
+    } else {
+      AudioEngine.sfx('crash');
+      haptic([40, 30, 40]);
+    }
+    bestEl.textContent = 'Best ' + best;
+    var overlay = document.createElement('div');
+    overlay.className = 'exfil-overlay';
+    overlay.innerHTML =
+      '<p class="eyebrow magenta" style="margin:0;">' + (success ? 'TOUCHDOWN' : 'SIGNAL LOST') + '</p>' +
+      '<div class="exfil-overlay-score">' + (success ? score : '—') + '</div>' +
+      '<button class="primary-btn" id="exfil-retry" style="width:auto;padding:12px 28px;">' + (success ? 'Fly Again' : 'Retry') + '</button>';
+    wrap.appendChild(overlay);
+    document.getElementById('exfil-retry').addEventListener('click', function () {
+      overlay.remove();
+      reset();
+      loop();
+    });
+  }
+
+  function loop() {
+    rafId = requestAnimationFrame(loop);
+    if (!running) return;
+    ctx.clearRect(0, 0, W, H);
+
+    ship.vy += GRAVITY;
+    if (thrusting && fuel > 0) {
+      ship.vy += THRUST;
+      fuel = Math.max(0, fuel - FUEL_BURN);
+    }
+    ship.y += ship.vy;
+    ship.x += ship.vx;
+    if (ship.x - ship.r < 0) { ship.x = ship.r; ship.vx *= -1; }
+    if (ship.x + ship.r > W) { ship.x = W - ship.r; ship.vx *= -1; }
+
+    altEl.textContent = String(Math.max(0, Math.round(GROUND_Y - ship.y)));
+    velEl.textContent = ship.vy.toFixed(1);
+    fuelEl.textContent = String(Math.round(fuel));
+
+    // skyline (decorative)
+    ctx.fillStyle = 'rgba(34,230,212,0.08)';
+    for (var i = 0; i < skyline.length; i++) {
+      var b = skyline[i];
+      ctx.fillRect(b.x, GROUND_Y - b.h, b.w, b.h);
+    }
+    // ground
+    ctx.strokeStyle = 'rgba(217,247,242,0.25)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(0, GROUND_Y); ctx.lineTo(W, GROUND_Y); ctx.stroke();
+    // pad
+    ctx.strokeStyle = '#22e6d4';
+    ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(padX, GROUND_Y); ctx.lineTo(padX + PAD_W, GROUND_Y); ctx.stroke();
+
+    // ship
+    ctx.save();
+    ctx.translate(ship.x, ship.y);
+    ctx.strokeStyle = '#22e6d4';
+    ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    ctx.moveTo(0, -ship.r); ctx.lineTo(ship.r * 0.8, ship.r * 0.7); ctx.lineTo(-ship.r * 0.8, ship.r * 0.7); ctx.closePath();
+    ctx.stroke();
+    if (thrusting && fuel > 0) {
+      ctx.strokeStyle = 'rgba(255,207,61,0.85)';
+      ctx.beginPath();
+      ctx.moveTo(-ship.r * 0.5, ship.r * 0.7);
+      ctx.lineTo(0, ship.r * 0.7 + 8 + Math.random() * 6);
+      ctx.lineTo(ship.r * 0.5, ship.r * 0.7);
+      ctx.stroke();
+    }
+    ctx.restore();
+
+    if (ship.y + ship.r >= GROUND_Y) {
+      var onPad = ship.x >= padX && ship.x <= padX + PAD_W;
+      var soft = Math.abs(ship.vy) <= SAFE_VY && Math.abs(ship.vx) <= SAFE_VX;
+      if (onPad && soft) {
+        var score = Math.round(100 + fuel + (SAFE_VY - Math.abs(ship.vy)) * 30);
+        die(true, score);
+      } else {
+        die(false, 0);
+      }
+    }
+  }
+  loop();
+
+  function onKeyDown(e) { if (e.code === 'Space' || e.key === ' ') { e.preventDefault(); startThrust(); } }
+  function onKeyUp(e) { if (e.code === 'Space' || e.key === ' ') { e.preventDefault(); stopThrust(); } }
+  canvas.addEventListener('pointerdown', startThrust);
+  canvas.addEventListener('pointerup', stopThrust);
+  canvas.addEventListener('pointerleave', stopThrust);
+  document.addEventListener('keydown', onKeyDown);
+  document.addEventListener('keyup', onKeyUp);
+
+  document.getElementById('back-home').addEventListener('click', function () {
+    running = false;
+    if (rafId) cancelAnimationFrame(rafId);
+    document.removeEventListener('keydown', onKeyDown);
+    document.removeEventListener('keyup', onKeyUp);
+    renderHome();
   });
 }
 
