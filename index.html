@@ -145,6 +145,11 @@
     font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; font-size: 11px; padding: 13px;
   }
   .ghost-btn:active { transform: scale(0.98); background: rgba(255,255,255,0.1); }
+  .menu-back-link {
+    margin-top: 8px; font-size: 10.5px; letter-spacing: 0.1em; text-transform: uppercase;
+    color: rgba(217,247,242,0.5); text-decoration: none; transition: color 0.2s;
+  }
+  .menu-back-link:hover, .menu-back-link:focus-visible { color: var(--cyan); }
 
   /* ── Home screen ── */
   .home-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px 10px; padding: 96px 18px 10px; }
@@ -354,6 +359,7 @@
     <div class="menu-actions">
       <button class="primary-btn" id="new-game-btn">New Game</button>
       <button class="ghost-btn" id="how-to-play-btn">How To Play</button>
+      <a href="https://waltviviers.com/" class="menu-back-link">Back to Main Page</a>
     </div>
   </div>
   <div class="menu-panel menu-howto" id="menu-howto" hidden>
