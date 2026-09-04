@@ -1180,13 +1180,13 @@ var AudioEngine = (function () {
     noise.buffer = buffer; noise.loop = true;
     var filter = c.createBiquadFilter();
     filter.type = 'lowpass'; filter.frequency.value = 280;
-    var noiseGain = c.createGain(); noiseGain.gain.value = 0.03;
+    var noiseGain = c.createGain(); noiseGain.gain.value = 0.075;
     noise.connect(filter); filter.connect(noiseGain); noiseGain.connect(masterGain);
     noise.start();
 
     var drone = c.createOscillator();
     drone.type = 'sine'; drone.frequency.value = 55;
-    var droneGain = c.createGain(); droneGain.gain.value = 0.02;
+    var droneGain = c.createGain(); droneGain.gain.value = 0.055;
     drone.connect(droneGain); droneGain.connect(masterGain);
     drone.start();
 
@@ -1209,7 +1209,7 @@ var AudioEngine = (function () {
       osc.type = 'sine';
       osc.frequency.value = freq;
       gain.gain.setValueAtTime(0, now);
-      gain.gain.linearRampToValueAtTime(0.045, now + 0.5);
+      gain.gain.linearRampToValueAtTime(0.1, now + 0.5);
       gain.gain.exponentialRampToValueAtTime(0.001, now + 2.4);
       osc.connect(gain); gain.connect(masterGain);
       osc.start(now);
