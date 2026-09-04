@@ -1216,10 +1216,23 @@ function updateStatusBar() {
   var batt = document.getElementById('battery-fill'); if (batt) batt.style.width = batteryPct() + '%';
 }
 function batteryPct() { var idx = state ? state.nodeIndex : 0; return Math.max(14, 100 - idx * 17); }
+function toRoman(num) {
+  if (num === 0) return 'N';
+  var vals = [1000, 900, 500, 400, 100, 90, 50, 40, 10, 9, 5, 4, 1];
+  var syms = ['M', 'CM', 'D', 'CD', 'C', 'XC', 'L', 'XL', 'X', 'IX', 'V', 'IV', 'I'];
+  var out = '';
+  for (var i = 0; i < vals.length; i++) {
+    while (num >= vals[i]) { out += syms[i]; num -= vals[i]; }
+  }
+  return out;
+}
 function tickClock() {
   function paint() {
     var el = document.getElementById('clock-time');
-    if (el) el.textContent = new Date().toTimeString().slice(0, 5);
+    if (!el) return;
+    var d = new Date();
+    var h12 = d.getHours() % 12; if (h12 === 0) h12 = 12;
+    el.textContent = toRoman(h12) + ':' + toRoman(d.getMinutes());
   }
   paint();
   setInterval(paint, 15000);
