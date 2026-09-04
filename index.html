@@ -304,6 +304,34 @@
   }
   .drone-overlay-score { font-size: 34px; font-weight: 800; color: var(--cyan); }
 
+  .contact-list { display: flex; flex-direction: column; gap: 10px; }
+  .contact-card { display: flex; align-items: center; gap: 14px; padding: 12px 14px; border: 1px solid var(--panel-line); border-radius: 10px; }
+  .contact-card.locked { opacity: 0.4; }
+  .contact-avatar {
+    width: 40px; height: 40px; border-radius: 50%; flex-shrink: 0;
+    border: 1.5px solid rgba(217,247,242,0.3); color: rgba(217,247,242,0.6);
+    display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 14px;
+  }
+  .contact-name { font-size: 12px; font-weight: 700; letter-spacing: 0.04em; }
+  .contact-role { font-size: 10.5px; color: rgba(217,247,242,0.5); margin-top: 2px; line-height: 1.4; }
+
+  .trophy-count { font-size: 10.5px; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(217,247,242,0.4); margin-bottom: 14px; }
+  .trophy-list { display: flex; flex-direction: column; gap: 10px; }
+  .trophy-row { padding: 12px 14px; border: 1px solid var(--panel-line); border-radius: 10px; opacity: 0.4; }
+  .trophy-row.unlocked { opacity: 1; border-color: rgba(255,207,61,0.4); background: rgba(255,207,61,0.06); }
+  .trophy-title { font-size: 12px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; }
+  .trophy-tag { font-size: 10.5px; color: rgba(217,247,242,0.5); margin-top: 3px; line-height: 1.4; }
+
+  .wallpaper-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .wallpaper-tile { display: flex; flex-direction: column; align-items: center; gap: 8px; background: none; border: none; color: inherit; padding: 0; }
+  .wallpaper-swatch {
+    display: block; width: 100%; aspect-ratio: 1 / 1; border-radius: 12px;
+    background: url('phone-bg-portrait.jpg') center 18% / cover no-repeat;
+    border: 2px solid rgba(217,247,242,0.15);
+  }
+  .wallpaper-tile.active .wallpaper-swatch { border-color: var(--cyan); box-shadow: 0 0 14px rgba(34,230,212,0.4); }
+  .wallpaper-name { font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(217,247,242,0.6); }
+
   /* ── Hit feedback: a brief brightness pulse, safe to layer on any element regardless of its own transform ── */
   @keyframes hitFlash { 0% { filter: brightness(1); } 25% { filter: brightness(2.4); } 100% { filter: brightness(1); } }
   .hit-pulse { animation: hitFlash 0.3s ease-out; }
@@ -485,7 +513,10 @@ var APP_ICONS = {
   notes:    function () { return '<rect x="5" y="3" width="14" height="18" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/><line x1="8" y1="8" x2="16" y2="8" stroke="currentColor" stroke-width="1.3"/><line x1="8" y1="12" x2="16" y2="12" stroke="currentColor" stroke-width="1.3"/><line x1="8" y1="16" x2="13" y2="16" stroke="currentColor" stroke-width="1.3"/>'; },
   status:   function () { return '<path d="M12 3l7 3.5v5c0 5-3 8.5-7 9.5-4-1-7-4.5-7-9.5v-5L12 3z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M9 12l2 2 4-4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>'; },
   stats:    function () { return '<rect x="4" y="14" width="4" height="7" rx="1" fill="none" stroke="currentColor" stroke-width="1.5"/><rect x="10" y="9" width="4" height="12" rx="1" fill="none" stroke="currentColor" stroke-width="1.5"/><rect x="16" y="4" width="4" height="17" rx="1" fill="none" stroke="currentColor" stroke-width="1.5"/>'; },
-  dronegame: function () { return '<line x1="12" y1="8" x2="12" y2="16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="8" y1="12" x2="16" y2="12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="6" cy="6" r="2.2" fill="none" stroke="currentColor" stroke-width="1.4"/><circle cx="18" cy="6" r="2.2" fill="none" stroke="currentColor" stroke-width="1.4"/><circle cx="6" cy="18" r="2.2" fill="none" stroke="currentColor" stroke-width="1.4"/><circle cx="18" cy="18" r="2.2" fill="none" stroke="currentColor" stroke-width="1.4"/><line x1="7.5" y1="7.5" x2="10.3" y2="10.3" stroke="currentColor" stroke-width="1.3"/><line x1="16.5" y1="7.5" x2="13.7" y2="10.3" stroke="currentColor" stroke-width="1.3"/><line x1="7.5" y1="16.5" x2="10.3" y2="13.7" stroke="currentColor" stroke-width="1.3"/><line x1="16.5" y1="16.5" x2="13.7" y2="13.7" stroke="currentColor" stroke-width="1.3"/>'; }
+  dronegame: function () { return '<line x1="12" y1="8" x2="12" y2="16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="8" y1="12" x2="16" y2="12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="6" cy="6" r="2.2" fill="none" stroke="currentColor" stroke-width="1.4"/><circle cx="18" cy="6" r="2.2" fill="none" stroke="currentColor" stroke-width="1.4"/><circle cx="6" cy="18" r="2.2" fill="none" stroke="currentColor" stroke-width="1.4"/><circle cx="18" cy="18" r="2.2" fill="none" stroke="currentColor" stroke-width="1.4"/><line x1="7.5" y1="7.5" x2="10.3" y2="10.3" stroke="currentColor" stroke-width="1.3"/><line x1="16.5" y1="7.5" x2="13.7" y2="10.3" stroke="currentColor" stroke-width="1.3"/><line x1="7.5" y1="16.5" x2="10.3" y2="13.7" stroke="currentColor" stroke-width="1.3"/><line x1="16.5" y1="16.5" x2="13.7" y2="13.7" stroke="currentColor" stroke-width="1.3"/>'; },
+  trophy:   function () { return '<path d="M7 4h10v4a5 5 0 0 1-10 0V4z" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M7 5H4v2a3 3 0 0 0 3 3" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="M17 5h3v2a3 3 0 0 1-3 3" fill="none" stroke="currentColor" stroke-width="1.3"/><line x1="12" y1="13" x2="12" y2="20" stroke="currentColor" stroke-width="1.5"/><line x1="8" y1="20" x2="16" y2="20" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>'; },
+  contacts: function () { return '<rect x="4" y="3" width="16" height="18" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="12" cy="10" r="3" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M7 17c0-2.5 2-4 5-4s5 1.5 5 4" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>'; },
+  wallpaper: function () { return '<rect x="3" y="4" width="18" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="8.5" cy="9.5" r="1.6" fill="currentColor"/><path d="M4 16l5-5 4 4 3-3 4 4" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>'; }
 };
 function appIconSvg(id) { return '<svg viewBox="0 0 24 24">' + (APP_ICONS[id] ? APP_ICONS[id]() : '') + '</svg>'; }
 
@@ -498,7 +529,10 @@ var APPS = [
   { id: 'notes',    name: 'Notes',    icon: 'notes',    color: '#8b909a' },
   { id: 'status',   name: 'Status',   icon: 'status',   color: '#8b909a' },
   { id: 'stats',    name: 'Stats',    icon: 'stats',    color: '#ffcf3d' },
-  { id: 'drone',    name: 'Drone',    icon: 'dronegame', color: '#22e6d4' }
+  { id: 'drone',    name: 'Drone',    icon: 'dronegame', color: '#22e6d4' },
+  { id: 'trophy',   name: 'Endings',  icon: 'trophy',    color: '#ffcf3d' },
+  { id: 'contacts', name: 'Contacts', icon: 'contacts',  color: '#8b909a' },
+  { id: 'wallpaper', name: 'Wallpaper', icon: 'wallpaper', color: '#ff3d94' }
 ];
 function appById(id) { for (var i = 0; i < APPS.length; i++) if (APPS[i].id === id) return APPS[i]; return null; }
 
@@ -963,6 +997,20 @@ var DRONE_HIGH_KEY = 'staticProtocolDroneHigh';
 function loadDroneHigh() { try { return parseInt(localStorage.getItem(DRONE_HIGH_KEY), 10) || 0; } catch (e) { return 0; } }
 function saveDroneHigh(v) { try { localStorage.setItem(DRONE_HIGH_KEY, String(v)); } catch (e) {} }
 
+/* ── Endings unlocked: which of the ENDINGS keys have been reached, across loops. ── */
+var ENDINGS_SEEN_KEY = 'staticProtocolEndingsSeen';
+function loadEndingsSeen() {
+  try {
+    var raw = localStorage.getItem(ENDINGS_SEEN_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch (e) { return {}; }
+}
+function markEndingSeen(key) {
+  endingsSeen[key] = true;
+  try { localStorage.setItem(ENDINGS_SEEN_KEY, JSON.stringify(endingsSeen)); } catch (e) {}
+}
+var endingsSeen = loadEndingsSeen();
+
 /* ── Time loop: persisted across sessions. Only staying level-headed breaks it. ── */
 var LOOP_STORAGE_KEY = 'staticProtocolLoop';
 function loadLoopMeta() {
@@ -1090,6 +1138,7 @@ var menuHowtoEl = document.getElementById('menu-howto');
 function enterGame() {
   startMenuEl.hidden = true;
   deviceWrapEl.hidden = false;
+  applyWallpaper(loadWallpaper());
   state = freshState();
   if (isReplaying()) {
     NODE_ROOFTOP.sync.duration = 1450;
@@ -1138,6 +1187,9 @@ function renderHome() {
       else if (id === 'status') { renderStatusApp(); }
       else if (id === 'stats') { renderStatsApp(); }
       else if (id === 'drone') { renderDroneGame(); }
+      else if (id === 'trophy') { renderTrophyApp(); }
+      else if (id === 'contacts') { renderContactsApp(); }
+      else if (id === 'wallpaper') { renderWallpaperApp(); }
       else if (id === 'camera') { renderInert('Camera', 'No photos yet. Nothing on this roll — you\'ve been busy.'); }
       else if (id === 'notes') { renderInert('Notes', 'STEAL DRIVE. DON\'T DIE.\n\nJob notes, from the last time you thought you could plan for this.'); }
     });
@@ -1351,6 +1403,97 @@ function renderDroneGame() {
     if (rafId) cancelAnimationFrame(rafId);
     document.removeEventListener('keydown', onKey);
     renderHome();
+  });
+}
+
+/* ── Contacts: who you've actually met, derived from how far the run has gone. ── */
+function nodePassed(nodeObj) {
+  var idx = state.currentNodes.indexOf(nodeObj);
+  return idx !== -1 && idx < state.nodeIndex;
+}
+function renderContactsApp() {
+  var contacts = [
+    { name: 'MARA', role: 'Old crew, still checks in — the last one who bothers.', met: nodePassed(NODE_CHECKIN) },
+    { name: 'FIXER', role: 'Back-alley broker. Loyal to whoever\'s paying that hour.', met: nodePassed(NODE_FIXER) },
+    { name: 'UNKNOWN NUMBER', role: 'Saw you in the server room. Says nothing more — yet.', met: nodePassed(NODE_WITNESS) },
+    { name: 'ROGUE AI', role: 'Something in the wires that talks back.', met: !!state.flags.aiAlly }
+  ];
+  var cardsHtml = contacts.map(function (c) {
+    if (!c.met) {
+      return '<div class="contact-card locked"><div class="contact-avatar">?</div><div class="contact-body"><div class="contact-name">???</div><div class="contact-role">Not yet encountered</div></div></div>';
+    }
+    return '<div class="contact-card"><div class="contact-avatar">' + c.name.charAt(0) + '</div><div class="contact-body"><div class="contact-name">' + c.name + '</div><div class="contact-role">' + c.role + '</div></div></div>';
+  }).join('');
+  setPhoneScreen(
+    '<div class="app-screen">' +
+      '<div class="app-header"><button class="back-btn" id="back-home">←</button><span class="aname">Contacts</span></div>' +
+      '<div class="app-body"><div class="contact-list">' + cardsHtml + '</div></div>' +
+    '</div>'
+  );
+  document.getElementById('back-home').addEventListener('click', renderHome);
+}
+
+/* ── Endings: a trophy case of every ending reached across loops. ── */
+function renderTrophyApp() {
+  var keys = Object.keys(ENDINGS);
+  var seenCount = keys.filter(function (k) { return endingsSeen[k]; }).length;
+  var rowsHtml = keys.map(function (k) {
+    var e = ENDINGS[k];
+    var seen = !!endingsSeen[k];
+    return '<div class="trophy-row' + (seen ? ' unlocked' : '') + '">' +
+      '<div class="trophy-title">' + (seen ? e.title : '???') + '</div>' +
+      '<div class="trophy-tag">' + (seen ? e.tag : 'Not yet reached') + '</div>' +
+    '</div>';
+  }).join('');
+  setPhoneScreen(
+    '<div class="app-screen">' +
+      '<div class="app-header"><button class="back-btn" id="back-home">←</button><span class="aname">Endings</span></div>' +
+      '<div class="app-body">' +
+        '<p class="trophy-count">' + seenCount + ' / ' + keys.length + ' unlocked</p>' +
+        '<div class="trophy-list">' + rowsHtml + '</div>' +
+      '</div>' +
+    '</div>'
+  );
+  document.getElementById('back-home').addEventListener('click', renderHome);
+}
+
+/* ── Wallpaper: a few filter presets over the one portrait, picked and persisted. ── */
+var WALLPAPER_KEY = 'staticProtocolWallpaper';
+var WALLPAPER_PRESETS = [
+  { id: 'default', name: 'Default', filter: 'none' },
+  { id: 'noir', name: 'Noir', filter: 'grayscale(1) contrast(1.15)' },
+  { id: 'magenta', name: 'Magenta Wash', filter: 'sepia(0.5) hue-rotate(280deg) saturate(2.2)' },
+  { id: 'cyan', name: 'Cyan Wash', filter: 'sepia(0.5) hue-rotate(150deg) saturate(2.6)' }
+];
+function loadWallpaper() { try { return localStorage.getItem(WALLPAPER_KEY) || 'default'; } catch (e) { return 'default'; } }
+function saveWallpaper(id) { try { localStorage.setItem(WALLPAPER_KEY, id); } catch (e) {} }
+function applyWallpaper(id) {
+  var preset = WALLPAPER_PRESETS.filter(function (p) { return p.id === id; })[0] || WALLPAPER_PRESETS[0];
+  var bg = document.querySelector('.phone-bg');
+  if (bg) bg.style.filter = preset.filter;
+}
+function renderWallpaperApp() {
+  var current = loadWallpaper();
+  var tilesHtml = WALLPAPER_PRESETS.map(function (p) {
+    return '<button class="wallpaper-tile' + (p.id === current ? ' active' : '') + '" data-id="' + p.id + '">' +
+      '<span class="wallpaper-swatch" style="filter:' + p.filter + ';"></span>' +
+      '<span class="wallpaper-name">' + p.name + '</span>' +
+    '</button>';
+  }).join('');
+  setPhoneScreen(
+    '<div class="app-screen">' +
+      '<div class="app-header"><button class="back-btn" id="back-home">←</button><span class="aname">Wallpaper</span></div>' +
+      '<div class="app-body"><div class="wallpaper-grid">' + tilesHtml + '</div></div>' +
+    '</div>'
+  );
+  document.getElementById('back-home').addEventListener('click', renderHome);
+  Array.prototype.forEach.call(document.querySelectorAll('.wallpaper-tile'), function (btn) {
+    btn.addEventListener('click', function () {
+      var id = btn.dataset.id;
+      saveWallpaper(id);
+      applyWallpaper(id);
+      renderWallpaperApp();
+    });
   });
 }
 
@@ -1950,6 +2093,7 @@ function renderEnding(choiceId, syncResult) {
   loopMeta.count++;
   if (brokeLoop) loopMeta.broken = true;
   saveLoopMeta();
+  markEndingSeen(key);
 
   updateStatusBar();
   var trustDom = allZero(state.flags.trust) ? 'NONE' : dominant(state.flags.trust, ['street', 'self', 'corp']).toUpperCase();
