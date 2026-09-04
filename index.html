@@ -484,8 +484,37 @@ var APPS = [
 function appById(id) { for (var i = 0; i < APPS.length; i++) if (APPS[i].id === id) return APPS[i]; return null; }
 
 /* ── Narrative data ── */
-/* Nodes 0, 1, 3, 4 are fixed. Node 2 branches into one of three variants,
-   picked by whichever trust is dominant once node 1 resolves — a real fork
+/* A starting-path choice before the run itself begins — no SYNC, just a
+   head start: a method lean and one free skill point toward it. */
+var NODE_PROLOGUE = {
+    id: 'prologue',
+    art: { accent: '#8b909a' },
+    app: 'messages',
+    sender: 'FIXER',
+    notif: { title: 'Messages', body: 'FIXER sent you the brief' },
+    label: 'PROLOGUE — HOW YOU WORK',
+    noSync: true,
+    scene: [
+      "The brief lands with no warmth in it, same as always: a drive, a rooftop, a window before Corp security finishes their sweep. \"You know the job,\" the fixer writes. \"Question's how you're doing it tonight.\"",
+      "Old habits are still the fastest way in. Pick the one that's kept you breathing this long."
+    ],
+    choices: [
+      { id: 'ghost',  icon: 'shadow', label: 'Ghost — quiet, careful, gone before anyone notices', method: { stealth: 2 },
+        response: "\"Quiet works,\" you type back. It always has. Whatever's waiting on that roof, it isn't going to see you coming." },
+      { id: 'muscle', icon: 'figure', label: 'Muscle — fast, loud, through anything in the way',    method: { violence: 2 },
+        response: "\"Fast and loud,\" you send, already moving. Subtlety's a tool like any other — tonight just isn't the night for it." },
+      { id: 'talker', icon: 'talk',   label: 'Talker — favours, angles, a way through every door',   method: { words: 2 },
+        response: "\"I'll talk my way in,\" you write, and you mean it. Half the city owes somebody a favour. Tonight, that somebody's you." }
+    ],
+    onSelect: function (state, choice) {
+      if (choice.id === 'ghost') state.skills.hacking += 1;
+      else if (choice.id === 'muscle') state.skills.combat += 1;
+      else if (choice.id === 'talker') state.skills.charisma += 1;
+    }
+};
+
+/* Nodes 1, 2, 4, 5 are fixed. Node 3 branches into one of three variants,
+   picked by whichever trust is dominant once node 2 resolves — a real fork
    in scene, choices and SYNC mechanic, not just re-flavoured text. */
 var NODE_ROOFTOP = {
     id: 'rooftop',
@@ -579,6 +608,39 @@ var NODE_FIXER = {
     },
     onFail: function (state) { state.flags.hunted++; state.flags.betrayed = true; },
     onPartial: function () {}
+};
+
+var NODE_TAIL = {
+    id: 'tail',
+    art: { accent: '#22e6d4' },
+    app: 'tracker',
+    notif: { title: 'Tracker', body: 'Someone\'s matching your pace' },
+    label: 'SOMEONE\'S ON YOU',
+    scene: [
+      "Two blocks from the fixer's booth, you clock it: the same jacket in the reflection of three different windows, always a half-step behind, never quite closing the gap.",
+      "Whoever it is, they're patient. You're not going to out-walk them. You need to decide how this ends before they do."
+    ],
+    choices: [
+      { id: 'shake',    icon: 'shadow', label: 'Lose them in the crowd',        method: { stealth: 2 },  trust: {} },
+      { id: 'corner',   icon: 'figure', label: 'Turn it around, corner them',   method: { violence: 2 }, trust: {} },
+      { id: 'call-out', icon: 'talk',   label: 'Call them out, see who blinks', method: { words: 2 },    trust: {} }
+    ],
+    sync: { mode: 'timing', rounds: 5, duration: 1250, label: 'BREAK THE TAIL', sub: 'Stop the signal inside the gap' },
+    outcomes: {
+      clean: function (c) {
+        return c.id === 'shake'   ? "You fold into the crowd at exactly the right second and come out the other side alone. Whoever it was, they're still checking doorways two streets back."
+             : c.id === 'corner'  ? "You close the distance instead of running, and they don't expect that at all. By the time they recover, you've got everything you need to know about who sent them."
+             :                      "You turn and just ask, flat out, and something about doing it in the open rattles them enough to answer honestly before they think better of it.";
+      },
+      partial: function () {
+        return "You lose them, mostly — but not before they get a decent look at your face. That's a cost you'll be paying later, not tonight.";
+      },
+      fail: function () {
+        return "You don't lose them at all. They peel off only once they're sure you've clocked exactly how thoroughly you're being watched.";
+      }
+    },
+    onFail: function (state) { state.flags.hunted++; },
+    onPartial: function (state) { state.flags.notoriety += 1; }
 };
 
 /* Branch: dominant trust after the fixer decides which of these three plays out. */
@@ -690,6 +752,31 @@ function pickServerVariant(state) {
   return NODE_SERVER_STREET;
 }
 
+var NODE_DEBRIEF = {
+    id: 'debrief',
+    art: { accent: '#8b909a' },
+    app: 'messages',
+    sender: 'FIXER',
+    notif: { title: 'Messages', body: 'FIXER wants a status update' },
+    label: 'INTERLUDE — THE FIXER WANTS WORDS',
+    noSync: true,
+    scene: [
+      "Your phone buzzes before you're even off the property. \"Heard you were in and out,\" the fixer writes. Word travels fast when it's about you.",
+      "\"So — what actually happened in there? And more importantly: does anyone know it was you?\""
+    ],
+    choices: [
+      { id: 'honest', icon: 'talk',   label: 'Tell them exactly what happened',           align: { good: 1 },
+        response: "You lay it out straight, no spin. \"Appreciate that,\" the fixer writes back, and for once it sounds like they mean it." },
+      { id: 'spin',   icon: 'shadow', label: 'Give them the version that sounds cleaner', align: { neutral: 1 },
+        response: "You round the edges off the story until it sounds like it went exactly to plan. The fixer doesn't push. They rarely do." },
+      { id: 'silent', icon: 'door',   label: 'Don\'t answer at all',                       align: { evil: 1 },
+        response: "You leave it on read. Whatever the fixer makes of that, they'll have to make of it without you." },
+      { id: 'reassure2', icon: 'signal', label: 'Talk them down about the exposure',       align: { neutral: 1 }, requires: { skill: 'charisma', min: 2 },
+        response: "You talk them through exactly what did and didn't get seen, calm enough and specific enough that the worry actually leaves their voice. \"Okay,\" they write. \"Okay, I believe you.\"" }
+    ],
+    onSelect: function (state, choice) { if (choice.id === 'reassure2') state.flags.resolve = Math.min(3, state.flags.resolve + 1); }
+};
+
 var NODE_WITNESS = {
     id: 'witness',
     art: { accent: '#8b909a' },
@@ -765,9 +852,9 @@ var NODE_FINAL = {
 };
 
 function buildNodeSequence() {
-  return [NODE_ROOFTOP, NODE_CHECKIN, NODE_FIXER, null, NODE_WITNESS, NODE_CONFRONTATION, NODE_FINAL];
+  return [NODE_PROLOGUE, NODE_ROOFTOP, NODE_CHECKIN, NODE_FIXER, NODE_TAIL, null, NODE_DEBRIEF, NODE_WITNESS, NODE_CONFRONTATION, NODE_FINAL];
 }
-var SERVER_BRANCH_INDEX = 3;
+var SERVER_BRANCH_INDEX = 5;
 
 var ENDINGS = {
   'ghost': {
