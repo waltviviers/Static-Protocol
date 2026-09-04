@@ -335,6 +335,22 @@
   .flag-box { border: 1px solid var(--panel-line); padding: 10px 12px; }
   .flag-box .fk { font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(217,247,242,0.4); margin-bottom: 5px; }
   .flag-box .fv { font-size: 12px; color: var(--cyan); }
+
+  .stat-group { margin-bottom: 22px; }
+  .stat-group:last-child { margin-bottom: 0; }
+  .stat-title { font-size: 9.5px; letter-spacing: 0.16em; text-transform: uppercase; color: rgba(217,247,242,0.4); margin-bottom: 10px; }
+  .stat-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .stat-row:last-child { margin-bottom: 0; }
+  .stat-label { flex: 0 0 64px; font-size: 10px; letter-spacing: 0.05em; color: rgba(217,247,242,0.6); text-transform: uppercase; }
+  .stat-track { flex: 1 1 auto; height: 6px; border-radius: 3px; background: rgba(255,255,255,0.06); overflow: hidden; }
+  .stat-fill { height: 100%; border-radius: 3px; background: var(--cyan); transition: width 0.4s ease; }
+  .stat-val { flex: 0 0 22px; text-align: right; font-size: 10.5px; color: rgba(217,247,242,0.65); }
+  .stat-flags { display: flex; flex-wrap: wrap; gap: 8px; }
+  .stat-pill {
+    font-size: 9.5px; letter-spacing: 0.06em; text-transform: uppercase; padding: 5px 10px;
+    border-radius: 999px; border: 1px solid var(--panel-line); color: rgba(217,247,242,0.45);
+  }
+  .stat-pill.on { color: var(--cyan); border-color: var(--cyan); background: rgba(34,230,212,0.08); }
   .sync-log { display: flex; gap: 5px; margin-top: 2px; }
   .sync-log span { width: 8px; height: 8px; border-radius: 50%; }
   .sync-log span.clean { background: var(--cyan); box-shadow: 0 0 6px var(--cyan); }
@@ -444,7 +460,8 @@ var APP_ICONS = {
   transmit: function () { return '<path d="M12 4v13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M7 9l5-5 5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 17v3h14v-3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>'; },
   camera:   function () { return '<rect x="3" y="7" width="18" height="13" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="12" cy="13.5" r="4" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 7l1.5-2.5h5L16 7" fill="none" stroke="currentColor" stroke-width="1.5"/>'; },
   notes:    function () { return '<rect x="5" y="3" width="14" height="18" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/><line x1="8" y1="8" x2="16" y2="8" stroke="currentColor" stroke-width="1.3"/><line x1="8" y1="12" x2="16" y2="12" stroke="currentColor" stroke-width="1.3"/><line x1="8" y1="16" x2="13" y2="16" stroke="currentColor" stroke-width="1.3"/>'; },
-  status:   function () { return '<path d="M12 3l7 3.5v5c0 5-3 8.5-7 9.5-4-1-7-4.5-7-9.5v-5L12 3z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M9 12l2 2 4-4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>'; }
+  status:   function () { return '<path d="M12 3l7 3.5v5c0 5-3 8.5-7 9.5-4-1-7-4.5-7-9.5v-5L12 3z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M9 12l2 2 4-4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>'; },
+  stats:    function () { return '<rect x="4" y="14" width="4" height="7" rx="1" fill="none" stroke="currentColor" stroke-width="1.5"/><rect x="10" y="9" width="4" height="12" rx="1" fill="none" stroke="currentColor" stroke-width="1.5"/><rect x="16" y="4" width="4" height="17" rx="1" fill="none" stroke="currentColor" stroke-width="1.5"/>'; }
 };
 function appIconSvg(id) { return '<svg viewBox="0 0 24 24">' + (APP_ICONS[id] ? APP_ICONS[id]() : '') + '</svg>'; }
 
@@ -455,7 +472,8 @@ var APPS = [
   { id: 'transmit', name: 'Transmit', icon: 'transmit', color: '#ff3d94' },
   { id: 'camera',   name: 'Cam',      icon: 'camera',   color: '#8b909a' },
   { id: 'notes',    name: 'Notes',    icon: 'notes',    color: '#8b909a' },
-  { id: 'status',   name: 'Status',   icon: 'status',   color: '#8b909a' }
+  { id: 'status',   name: 'Status',   icon: 'status',   color: '#8b909a' },
+  { id: 'stats',    name: 'Stats',    icon: 'stats',    color: '#ffcf3d' }
 ];
 function appById(id) { for (var i = 0; i < APPS.length; i++) if (APPS[i].id === id) return APPS[i]; return null; }
 
@@ -958,6 +976,7 @@ function renderHome() {
       var id = btn.dataset.app;
       if (id === activeApp) { openCurrentNode(); }
       else if (id === 'status') { renderStatusApp(); }
+      else if (id === 'stats') { renderStatsApp(); }
       else if (id === 'camera') { renderInert('Camera', 'No photos yet. Nothing on this roll — you\'ve been busy.'); }
       else if (id === 'notes') { renderInert('Notes', 'STEAL DRIVE. DON\'T DIE.\n\nJob notes, from the last time you thought you could plan for this.'); }
     });
@@ -994,6 +1013,46 @@ function renderStatusApp() {
           '<div class="flag-box"><div class="fk">Battery</div><div class="fv">' + batteryPct() + '%</div></div>' +
         '</div>' +
         (loopMeta.count > 0 ? '<p style="font-size:10.5px;color:rgba(217,247,242,0.4);letter-spacing:0.08em;text-transform:uppercase;margin-top:4px;">Loop ' + (loopMeta.count + 1) + (loopMeta.broken ? ' · protocol complete' : '') + '</p>' : '') +
+      '</div>' +
+    '</div>'
+  );
+  document.getElementById('back-home').addEventListener('click', renderHome);
+}
+
+function statBarRow(label, value, groupMax) {
+  var pct = groupMax > 0 ? Math.round((value / groupMax) * 100) : 0;
+  return '<div class="stat-row"><span class="stat-label">' + label + '</span><div class="stat-track"><div class="stat-fill" style="width:' + pct + '%"></div></div><span class="stat-val">' + value + '</span></div>';
+}
+function renderStatsApp() {
+  var t = state.flags.trust, m = state.flags.method, a = state.flags.alignment;
+  var trustMax = Math.max(t.street, t.self, t.corp, 1);
+  var methodMax = Math.max(m.stealth, m.words, m.violence, 1);
+  var alignMax = Math.max(a.good, a.neutral, a.evil, 1);
+  var notorietyMax = Math.max(state.flags.notoriety, 5);
+  setPhoneScreen(
+    '<div class="app-screen">' +
+      '<div class="app-header"><button class="back-btn" id="back-home">←</button><span class="aname">Stats</span></div>' +
+      '<div class="app-body">' +
+        '<div class="stat-group"><div class="stat-title">Trust</div>' +
+          statBarRow('Street', t.street, trustMax) + statBarRow('Self', t.self, trustMax) + statBarRow('Corp', t.corp, trustMax) +
+        '</div>' +
+        '<div class="stat-group"><div class="stat-title">Method</div>' +
+          statBarRow('Stealth', m.stealth, methodMax) + statBarRow('Words', m.words, methodMax) + statBarRow('Violence', m.violence, methodMax) +
+        '</div>' +
+        '<div class="stat-group"><div class="stat-title">Alignment</div>' +
+          statBarRow('Good', a.good, alignMax) + statBarRow('Neutral', a.neutral, alignMax) + statBarRow('Evil', a.evil, alignMax) +
+        '</div>' +
+        '<div class="stat-group"><div class="stat-title">Vitals</div>' +
+          statBarRow('Hunted', Math.min(state.flags.hunted, 3), 3) + statBarRow('Resolve', state.flags.resolve, 3) + statBarRow('Notoriety', state.flags.notoriety, notorietyMax) +
+        '</div>' +
+        '<div class="stat-group"><div class="stat-title">Flags</div>' +
+          '<div class="stat-flags">' +
+            '<span class="stat-pill' + (state.flags.betrayed ? ' on' : '') + '">Betrayed</span>' +
+            '<span class="stat-pill' + (state.flags.hurt ? ' on' : '') + '">Hurt</span>' +
+            '<span class="stat-pill' + (state.flags.aiAlly ? ' on' : '') + '">AI Ally</span>' +
+          '</div>' +
+        '</div>' +
+        (loopMeta.count > 0 ? '<p style="font-size:10.5px;color:rgba(217,247,242,0.4);letter-spacing:0.08em;text-transform:uppercase;margin-top:18px;">Loop ' + (loopMeta.count + 1) + (loopMeta.broken ? ' · protocol complete' : '') + '</p>' : '') +
       '</div>' +
     '</div>'
   );
