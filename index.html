@@ -105,6 +105,9 @@
     padding: 24px 20px 6px; font-size: 11.5px; letter-spacing: 0.02em; position: relative; z-index: 60;
   }
   .status-right { display: flex; align-items: center; gap: 7px; }
+  .mute-toggle { background: none; border: none; padding: 2px; display: flex; align-items: center; color: rgba(217,247,242,0.6); }
+  .mute-toggle svg { width: 13px; height: 13px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+  .mute-toggle.is-muted { color: rgba(217,247,242,0.3); }
   .signal-bars { display: flex; align-items: flex-end; gap: 2px; height: 10px; }
   .signal-bars i { width: 3px; display: block; background: rgba(217,247,242,0.22); border-radius: 1px; }
   .signal-bars i:nth-child(1) { height: 4px; } .signal-bars i:nth-child(2) { height: 7px; } .signal-bars i:nth-child(3) { height: 10px; }
@@ -460,6 +463,7 @@
     <div class="status-bar">
       <span id="clock-time">23:47</span>
       <div class="status-right">
+        <button class="mute-toggle" id="mute-toggle" aria-label="Toggle sound"><svg id="mute-icon" viewBox="0 0 24 24"></svg></button>
         <div class="signal-bars" id="signal-bars" aria-hidden="true"><i></i><i></i><i></i></div>
         <div class="battery" aria-hidden="true"><div class="battery-fill" id="battery-fill" style="width:100%"></div></div>
       </div>
@@ -1076,13 +1080,131 @@ function classify(hits, lates, misses, N) {
   return 'partial';
 }
 
+/* ── Audio: synthesised music, SFX and ambient city noise — no audio files, just Web Audio. ── */
+var AudioEngine = (function () {
+  var ctx = null, masterGain = null, ambientNodes = null, musicTimer = null;
+  var MUTE_KEY = 'staticProtocolMuted';
+  var SCALE = [110, 123.47, 130.81, 146.83, 164.81, 174.61, 196];
+  var muted = (function () { try { return localStorage.getItem(MUTE_KEY) === '1'; } catch (e) { return false; } })();
+
+  function ensureCtx() {
+    if (ctx) return ctx;
+    try {
+      var Ctor = window.AudioContext || window.webkitAudioContext;
+      if (!Ctor) return null;
+      ctx = new Ctor();
+      masterGain = ctx.createGain();
+      masterGain.gain.value = muted ? 0 : 1;
+      masterGain.connect(ctx.destination);
+    } catch (e) { ctx = null; }
+    return ctx;
+  }
+  function resume() {
+    var c = ensureCtx();
+    if (c && c.state === 'suspended') c.resume().catch(function () {});
+  }
+  function setMuted(v) {
+    muted = v;
+    try { localStorage.setItem(MUTE_KEY, v ? '1' : '0'); } catch (e) {}
+    if (masterGain && ctx) masterGain.gain.setTargetAtTime(muted ? 0 : 1, ctx.currentTime, 0.05);
+  }
+  function isMuted() { return muted; }
+
+  var SFX = {
+    tap:    { freq: 720, type: 'sine',     dur: 0.06, vol: 0.11 },
+    hit:    { freq: 920, type: 'square',   dur: 0.07, vol: 0.13 },
+    miss:   { freq: 200, type: 'sawtooth', dur: 0.18, vol: 0.16, down: true },
+    notify: { freq: 1100, type: 'sine',    dur: 0.12, vol: 0.13 },
+    open:   { freq: 480, type: 'triangle', dur: 0.09, vol: 0.09 },
+    ending: { freq: 260, type: 'sine',     dur: 0.55, vol: 0.15, up: true },
+    flap:   { freq: 620, type: 'sine',     dur: 0.05, vol: 0.09 },
+    crash:  { freq: 110, type: 'sawtooth', dur: 0.32, vol: 0.19, down: true }
+  };
+  function sfx(name) {
+    var c = ensureCtx(); if (!c) return;
+    resume();
+    var p = SFX[name] || SFX.tap;
+    var now = c.currentTime;
+    var osc = c.createOscillator(), gain = c.createGain();
+    osc.type = p.type;
+    osc.frequency.setValueAtTime(p.freq, now);
+    if (p.down) osc.frequency.exponentialRampToValueAtTime(Math.max(30, p.freq * 0.4), now + p.dur);
+    if (p.up) osc.frequency.exponentialRampToValueAtTime(p.freq * 1.8, now + p.dur);
+    gain.gain.setValueAtTime(p.vol, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + p.dur);
+    osc.connect(gain); gain.connect(masterGain);
+    osc.start(now);
+    osc.stop(now + p.dur + 0.02);
+  }
+
+  function startAmbient() {
+    var c = ensureCtx(); if (!c || ambientNodes) return;
+    resume();
+    var bufSize = 2 * c.sampleRate;
+    var buffer = c.createBuffer(1, bufSize, c.sampleRate);
+    var data = buffer.getChannelData(0);
+    for (var i = 0; i < bufSize; i++) data[i] = Math.random() * 2 - 1;
+    var noise = c.createBufferSource();
+    noise.buffer = buffer; noise.loop = true;
+    var filter = c.createBiquadFilter();
+    filter.type = 'lowpass'; filter.frequency.value = 280;
+    var noiseGain = c.createGain(); noiseGain.gain.value = 0.03;
+    noise.connect(filter); filter.connect(noiseGain); noiseGain.connect(masterGain);
+    noise.start();
+
+    var drone = c.createOscillator();
+    drone.type = 'sine'; drone.frequency.value = 55;
+    var droneGain = c.createGain(); droneGain.gain.value = 0.02;
+    drone.connect(droneGain); droneGain.connect(masterGain);
+    drone.start();
+
+    ambientNodes = { noise: noise, drone: drone };
+  }
+  function stopAmbient() {
+    if (!ambientNodes) return;
+    try { ambientNodes.noise.stop(); ambientNodes.drone.stop(); } catch (e) {}
+    ambientNodes = null;
+  }
+
+  function startMusic() {
+    var c = ensureCtx(); if (!c || musicTimer) return;
+    resume();
+    function playNote() {
+      if (!ctx) return;
+      var freq = SCALE[Math.floor(Math.random() * SCALE.length)];
+      var now = ctx.currentTime;
+      var osc = ctx.createOscillator(), gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0, now);
+      gain.gain.linearRampToValueAtTime(0.045, now + 0.5);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 2.4);
+      osc.connect(gain); gain.connect(masterGain);
+      osc.start(now);
+      osc.stop(now + 2.5);
+    }
+    playNote();
+    musicTimer = setInterval(playNote, 2700);
+  }
+  function stopMusic() {
+    if (musicTimer) { clearInterval(musicTimer); musicTimer = null; }
+  }
+
+  return {
+    resume: resume, sfx: sfx,
+    startAmbient: startAmbient, stopAmbient: stopAmbient,
+    startMusic: startMusic, stopMusic: stopMusic,
+    setMuted: setMuted, isMuted: isMuted
+  };
+})();
+
 /* ── Feedback: a crisp buzz + brightness pulse on a clean hit, a duller one on a miss ── */
 function haptic(pattern) {
   if (navigator.vibrate) { try { navigator.vibrate(pattern); } catch (e) {} }
 }
 function feedbackFor(kind, el) {
-  if (kind === 'hit') { haptic(18); if (el) { el.classList.remove('hit-pulse'); void el.offsetWidth; el.classList.add('hit-pulse'); } }
-  else if (kind === 'miss') { haptic([40, 30, 40]); }
+  if (kind === 'hit') { haptic(18); AudioEngine.sfx('hit'); if (el) { el.classList.remove('hit-pulse'); void el.offsetWidth; el.classList.add('hit-pulse'); } }
+  else if (kind === 'miss') { haptic([40, 30, 40]); AudioEngine.sfx('miss'); }
 }
 
 /* ── Status bar (persistent — signal bars double as the Hunted meter) ── */
@@ -1139,6 +1261,9 @@ function enterGame() {
   startMenuEl.hidden = true;
   deviceWrapEl.hidden = false;
   applyWallpaper(loadWallpaper());
+  AudioEngine.resume();
+  AudioEngine.startAmbient();
+  AudioEngine.startMusic();
   state = freshState();
   if (isReplaying()) {
     NODE_ROOFTOP.sync.duration = 1450;
@@ -1155,6 +1280,8 @@ function enterGame() {
 }
 function exitToMenu() {
   clearTimers();
+  AudioEngine.stopAmbient();
+  AudioEngine.stopMusic();
   deviceWrapEl.hidden = true;
   menuHowtoEl.hidden = true;
   menuMainEl.hidden = false;
@@ -1165,6 +1292,21 @@ document.getElementById('new-game-btn').addEventListener('click', enterGame);
 document.getElementById('howto-new-game-btn').addEventListener('click', enterGame);
 document.getElementById('how-to-play-btn').addEventListener('click', function () { menuMainEl.hidden = true; menuHowtoEl.hidden = false; });
 document.getElementById('howto-back-btn').addEventListener('click', function () { menuHowtoEl.hidden = true; menuMainEl.hidden = false; });
+
+var SPEAKER_ON = '<path d="M3 9v6h4l5 5V4L7 9H3z" fill="currentColor" stroke="none"/><path d="M16 8a5 5 0 0 1 0 8" fill="none"/><path d="M18.5 5.5a9 9 0 0 1 0 13" fill="none"/>';
+var SPEAKER_OFF = '<path d="M3 9v6h4l5 5V4L7 9H3z" fill="currentColor" stroke="none"/><line x1="15.5" y1="8.5" x2="21.5" y2="15.5"/><line x1="21.5" y1="8.5" x2="15.5" y2="15.5"/>';
+function refreshMuteIcon() {
+  var icon = document.getElementById('mute-icon');
+  var btn = document.getElementById('mute-toggle');
+  if (!icon || !btn) return;
+  icon.innerHTML = AudioEngine.isMuted() ? SPEAKER_OFF : SPEAKER_ON;
+  btn.classList.toggle('is-muted', AudioEngine.isMuted());
+}
+document.getElementById('mute-toggle').addEventListener('click', function () {
+  AudioEngine.setMuted(!AudioEngine.isMuted());
+  refreshMuteIcon();
+});
+refreshMuteIcon();
 
 function renderHome() {
   clearTimers();
@@ -1183,6 +1325,7 @@ function renderHome() {
   Array.prototype.forEach.call(phoneScreen.querySelectorAll('.app-icon'), function (btn) {
     btn.addEventListener('click', function () {
       var id = btn.dataset.app;
+      AudioEngine.sfx('open');
       if (id === activeApp) { openCurrentNode(); }
       else if (id === 'status') { renderStatusApp(); }
       else if (id === 'stats') { renderStatsApp(); }
@@ -1325,11 +1468,13 @@ function renderDroneGame() {
     started = true;
     drone.vy = FLAP;
     haptic(12);
+    AudioEngine.sfx('flap');
   }
 
   function die() {
     if (!running) return;
     running = false;
+    AudioEngine.sfx('crash');
     if (score > best) { best = score; saveDroneHigh(best); }
     bestEl.textContent = 'Best ' + best;
     var overlay = document.createElement('div');
@@ -1501,6 +1646,7 @@ function renderWallpaperApp() {
 function showBanner(appDef, title, body, onTap) {
   var home = phoneScreen.querySelector('.home-screen');
   if (!home) return;
+  AudioEngine.sfx('notify');
   var el = document.createElement('div');
   el.className = 'notif-banner';
   el.innerHTML = '<span class="nicon" style="color:' + appDef.color + '">' + appIconSvg(appDef.icon) + '</span><span class="nbody"><b>' + title + '</b><span>' + body + '</span></span>';
@@ -1569,6 +1715,7 @@ function renderCall(node) {
 
 function activateChoice(node, idx) {
   var choice = node.choices[idx];
+  AudioEngine.sfx('tap');
   state.lastChoice = choice;
   addFlags(state.flags.method, choice.method || {});
   addFlags(state.flags.trust, choice.trust || {});
@@ -2086,6 +2233,8 @@ function computeEnding(choiceId, syncResult) {
 
 function renderEnding(choiceId, syncResult) {
   clearTimers();
+  AudioEngine.stopMusic();
+  AudioEngine.sfx('ending');
   var key = computeEnding(choiceId, syncResult);
   var ending = ENDINGS[key];
   var brokeLoop = key === 'loop-broken';
