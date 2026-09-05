@@ -196,6 +196,19 @@
   .location-name { font-size: 12.5px; font-weight: 700; letter-spacing: 0.04em; display: flex; align-items: center; gap: 8px; }
   .location-tag { font-size: 8.5px; letter-spacing: 0.1em; color: var(--cyan); border: 1px solid rgba(34,230,212,0.4); border-radius: 999px; padding: 2px 7px; }
   .location-desc { font-size: 10.5px; color: rgba(217,247,242,0.5); margin-top: 5px; line-height: 1.4; }
+  .location-map {
+    display: block; width: 100%; height: auto; margin-bottom: 16px;
+    border: 1px solid var(--panel-line); border-radius: 12px;
+    background: radial-gradient(circle at 50% 40%, rgba(34,230,212,0.05), transparent 70%);
+  }
+  .map-bldg { fill: rgba(34,230,212,0.07); stroke: rgba(34,230,212,0.15); stroke-width: 1; }
+  .map-route { stroke: rgba(217,247,242,0.14); stroke-width: 1; stroke-dasharray: 3 3; }
+  .map-node circle { fill: rgba(217,247,242,0.45); cursor: pointer; }
+  .map-node.current circle.map-dot { fill: var(--cyan); }
+  .map-node text { fill: rgba(217,247,242,0.55); font-size: 8px; font-family: 'JetBrains Mono', monospace; letter-spacing: 0.05em; cursor: pointer; }
+  .map-node.current text { fill: var(--cyan); font-weight: 700; }
+  .map-pulse { fill: none; stroke: var(--cyan); stroke-width: 1.5; transform-origin: center; transform-box: fill-box; animation: mapPulse 1.8s ease-out infinite; }
+  @keyframes mapPulse { 0% { transform: scale(1); opacity: 0.65; } 100% { transform: scale(2.4); opacity: 0; } }
 
   /* ── App chrome ── */
   .app-screen { min-height: 100%; display: flex; flex-direction: column; }
@@ -1624,6 +1637,37 @@ function renderDroneGame() {
 }
 
 /* ── Location: pick a position, hold too long and surveillance catches up. ── */
+var LOCATION_MAP_POS = {
+  plaza:     { x: 72,  y: 55 },
+  rooftop:   { x: 208, y: 55 },
+  alley:     { x: 60,  y: 155 },
+  underpass: { x: 208, y: 165 }
+};
+function locationMapSvg() {
+  var nodesHtml = LOCATIONS.map(function (loc) {
+    var p = LOCATION_MAP_POS[loc.id];
+    var isCurrent = state.location === loc.id;
+    return '<g class="map-node' + (isCurrent ? ' current' : '') + '" data-loc="' + loc.id + '">' +
+      (isCurrent ? '<circle class="map-pulse" cx="' + p.x + '" cy="' + p.y + '" r="7"></circle>' : '') +
+      '<circle class="map-dot" cx="' + p.x + '" cy="' + p.y + '" r="' + (isCurrent ? 6 : 5) + '"></circle>' +
+      '<text x="' + p.x + '" y="' + (p.y + 22) + '" text-anchor="middle">' + loc.name.toUpperCase() + '</text>' +
+    '</g>';
+  }).join('');
+  return (
+    '<svg class="location-map" viewBox="0 0 280 210">' +
+      '<rect class="map-bldg" x="18" y="20" width="30" height="55"></rect>' +
+      '<rect class="map-bldg" x="150" y="12" width="26" height="80"></rect>' +
+      '<rect class="map-bldg" x="232" y="18" width="30" height="65"></rect>' +
+      '<rect class="map-bldg" x="16" y="115" width="26" height="45"></rect>' +
+      '<rect class="map-bldg" x="230" y="120" width="30" height="50"></rect>' +
+      '<line class="map-route" x1="72" y1="55" x2="208" y2="55"></line>' +
+      '<line class="map-route" x1="72" y1="55" x2="60" y2="155"></line>' +
+      '<line class="map-route" x1="208" y1="55" x2="208" y2="165"></line>' +
+      '<line class="map-route" x1="60" y1="155" x2="208" y2="165"></line>' +
+      nodesHtml +
+    '</svg>'
+  );
+}
 function renderLocationApp() {
   var stale = state.location && state.locationStale >= LOCATION_STALE_LIMIT;
   var statusText = !state.location ? 'Pick a position to hold.'
@@ -1640,21 +1684,25 @@ function renderLocationApp() {
     '<div class="app-screen">' +
       '<div class="app-header"><button class="back-btn" id="back-home">←</button><span class="aname">Location</span></div>' +
       '<div class="app-body">' +
+        locationMapSvg() +
         '<p class="location-status' + (stale ? ' warn' : '') + '">' + statusText + '</p>' +
         '<div class="location-list">' + cardsHtml + '</div>' +
       '</div>' +
     '</div>'
   );
   document.getElementById('back-home').addEventListener('click', renderHome);
+  function selectLocation(id) {
+    if (id === state.location) return;
+    state.location = id;
+    state.locationStale = 0;
+    AudioEngine.sfx('tap');
+    renderLocationApp();
+  }
+  Array.prototype.forEach.call(document.querySelectorAll('.map-node'), function (g) {
+    g.addEventListener('click', function () { selectLocation(g.dataset.loc); });
+  });
   Array.prototype.forEach.call(document.querySelectorAll('.location-card'), function (btn) {
-    btn.addEventListener('click', function () {
-      var id = btn.dataset.loc;
-      if (id === state.location) return;
-      state.location = id;
-      state.locationStale = 0;
-      AudioEngine.sfx('tap');
-      renderLocationApp();
-    });
+    btn.addEventListener('click', function () { selectLocation(btn.dataset.loc); });
   });
 }
 
