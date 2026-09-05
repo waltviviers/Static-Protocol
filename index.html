@@ -137,6 +137,17 @@
   }
   .start-menu[hidden] { display: none; }
   .menu-bg-video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 0; }
+  .menu-bg-video-blur { display: none; }
+  @media (max-width: 900px) {
+    /* The source video is landscape; on a narrow portrait screen a straight cover crop loses
+       most of the frame off the sides. Show the full frame (contain) over a blurred, cover-fit
+       copy of the same clip so the screen still reads as fully filled edge to edge. */
+    .menu-bg-video-blur {
+      display: block; position: absolute; inset: 0; width: 100%; height: 100%;
+      object-fit: cover; z-index: 0; filter: blur(30px) brightness(0.55); transform: scale(1.15);
+    }
+    .menu-bg-video { object-fit: contain; background: #05050a; }
+  }
   .menu-scrim { position: absolute; inset: 0; z-index: 1; background: linear-gradient(180deg, rgba(5,5,10,0.5) 0%, rgba(5,5,10,0.78) 58%, rgba(5,5,10,0.94) 100%); }
   .menu-panel { position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center; width: 100%; max-width: 340px; }
   .menu-panel[hidden] { display: none; }
@@ -465,6 +476,7 @@
 </head>
 <body>
 <div class="start-menu" id="start-menu">
+  <video class="menu-bg-video-blur" autoplay loop muted playsinline aria-hidden="true" src="magnific_no-moths-way-more-flicker_3zVs6SqREY.mp4"></video>
   <video class="menu-bg-video" autoplay loop muted playsinline aria-hidden="true" src="magnific_no-moths-way-more-flicker_3zVs6SqREY.mp4"></video>
   <div class="menu-scrim" aria-hidden="true"></div>
   <a href="https://waltviviers.com/" class="site-logo" aria-label="Walt Viviers — home">
