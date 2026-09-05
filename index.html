@@ -126,11 +126,15 @@
   /* ── Start menu: a separate full-screen title screen, not part of the phone ── */
   .start-menu { position: fixed; inset: 0; z-index: 200; overflow: hidden; display: flex; align-items: center; justify-content: center; text-align: center; padding: 24px; }
   .site-logo {
-    position: absolute; top: max(20px, env(safe-area-inset-top)); left: max(20px, env(safe-area-inset-left));
+    position: absolute; top: max(32px, env(safe-area-inset-top)); left: max(48px, env(safe-area-inset-left));
     z-index: 3; opacity: 0.85; transition: opacity 0.2s;
   }
   .site-logo:hover, .site-logo:focus-visible { opacity: 1; }
-  .site-logo img { display: block; height: 30px; width: auto; }
+  .site-logo img { display: block; height: 36px; width: auto; }
+  @media (max-width: 900px) {
+    .site-logo { top: max(11px, env(safe-area-inset-top)); left: max(24px, env(safe-area-inset-left)); }
+    .site-logo img { height: 28px; }
+  }
   .start-menu[hidden] { display: none; }
   .menu-bg-video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 0; }
   .menu-scrim { position: absolute; inset: 0; z-index: 1; background: linear-gradient(180deg, rgba(5,5,10,0.5) 0%, rgba(5,5,10,0.78) 58%, rgba(5,5,10,0.94) 100%); }
