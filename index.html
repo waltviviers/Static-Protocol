@@ -124,7 +124,9 @@
   ::-webkit-scrollbar-thumb { background: rgba(34,230,212,0.25); }
 
   /* ── Start menu: a separate full-screen title screen, not part of the phone ── */
-  .start-menu { position: fixed; inset: 0; z-index: 200; overflow: hidden; display: flex; align-items: flex-end; justify-content: center; text-align: center; padding: 24px; padding-bottom: 64px; }
+  /* Scrolls when its content is taller than the screen (How To Play on phones, short windows, large text). The panel's
+     auto top margin keeps it at the bottom when it fits and collapses when it doesn't, so the top stays reachable. */
+  .start-menu { position: fixed; inset: 0; z-index: 200; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; display: flex; align-items: flex-start; justify-content: center; text-align: center; padding: 24px; padding-bottom: 64px; }
   .site-logo {
     position: absolute; top: max(32px, env(safe-area-inset-top)); left: max(48px, env(safe-area-inset-left));
     z-index: 3; opacity: 0.85; transition: opacity 0.2s;
@@ -136,26 +138,29 @@
     .site-logo img { height: 28px; }
   }
   .start-menu[hidden] { display: none; }
-  .menu-bg-video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 0; }
+  .menu-bg-video { position: fixed; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 0; }  /* fixed: stays put behind scrolling text */
   .menu-bg-video-blur { display: none; }
   @media (max-width: 900px) {
     /* The source video is landscape; on a narrow portrait screen a straight cover crop loses
        most of the frame off the sides. Show the full frame (contain) over a blurred, cover-fit
        copy of the same clip so the screen still reads as fully filled edge to edge. */
     .menu-bg-video-blur {
-      display: block; position: absolute; inset: 0; width: 100%; height: 100%;
+      display: block; position: fixed; inset: 0; width: 100%; height: 100%;
       object-fit: cover; z-index: 0; filter: blur(30px) brightness(0.55); transform: scale(1.15);
     }
     .menu-bg-video {
+      /* Absolute so it scrolls away with the copy; boxed to the 16:9 frame so the 1.6x scale adds no empty scroll below */
+      position: absolute; height: 56.25vw;
       object-fit: contain; object-position: center top; background: #05050a; opacity: 1;
       transform: scale(1.6); transform-origin: center top;
     }
     /* The video (contain, top-anchored, scale(1.6)) renders at height = 0.9 * viewport width,
        independent of viewport height. Push the panel to start clear of it instead of centering
        vertically, or the copy overlaps the footage. */
-    .start-menu { align-items: flex-start; padding-top: calc(90vw + 20px); }
+    .start-menu { padding-top: calc(90vw + 20px); }
+    .start-menu .menu-panel { margin-top: 0; }  /* beats the base auto margin declared below */
   }
-  .menu-panel { position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center; width: 100%; max-width: 340px; }
+  .menu-panel { position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center; width: 100%; max-width: 340px; margin-top: auto; flex-shrink: 0; }
   .menu-panel[hidden] { display: none; }
   .menu-brand { font-size: 2.1rem; font-weight: 800; letter-spacing: 0.06em; margin-bottom: 8px; }
   .menu-loop-tag { font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--magenta); margin-bottom: 8px; }
