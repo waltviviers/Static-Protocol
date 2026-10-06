@@ -16,7 +16,7 @@ Every choice triggers a live **SYNC** sequence — a short, tense minigame tuned
 
 ## Playing it
 
-Open `index.html` — no build step, no dependencies. The title screen is a full page of its own; New Game drops you into the phone, which fills the real screen edge to edge on mobile or renders as a device mockup on desktop, since the whole point is that you're holding someone's phone.
+Live at [static-protocol.waltviviers.com](https://static-protocol.waltviviers.com/) — the root (`index.html`) is a landing page; `/play/index.html` is the actual game, and is the only file that matters for local development. No build step, no dependencies, both pages are self-contained HTML. The title screen inside `/play/` is a full page of its own; New Game drops you into the phone, which fills the real screen edge to edge on mobile or renders as a device mockup on desktop, since the whole point is that you're holding someone's phone.
 
 Controls: tap, or arrow keys / WASD / Space during a SYNC sequence.
 
